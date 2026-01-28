@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll Live Sync V15</title>
+    <title>Payroll Auto-Sync V15</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -91,6 +91,7 @@
             .p-table th, .p-table td { border:1px solid #000; padding:4px 5px; }
             .p-table th { background:#f0f0f0 !important; -webkit-print-color-adjust:exact; text-align:center; font-weight:bold; }
             .col-money { text-align:right; white-space:nowrap; width:12%; }
+            .col-total { text-align:right; white-space:nowrap; width:13%; font-weight:bold; border-left:2px solid #000 !important; }
             .col-day { width:15px; text-align:center; padding:2px !important; }
             .total-wrapper { display:flex; justify-content:flex-end; margin-top:10px; }
             .total-table { width:50%; border-collapse:collapse; font-family:'Arial', sans-serif; border:2px solid #000; }
@@ -107,7 +108,7 @@
 
 <div class="header">
     <div id="statusBadge" class="status-pill">
-        <div class="s-dot"></div> <span id="sText">Offline</span>
+        <div class="s-dot"></div> <span id="sText">Cloud Ready</span>
     </div>
 
     <div style="margin-bottom:10px;">
@@ -178,7 +179,7 @@
     <table class="p-table">
         <thead>
             <tr>
-                <th rowspan="2" width="3%">No</th><th rowspan="2">Nama Pekerja</th><th rowspan="2" width="10%">Jabatan</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekapitulasi</th><th colspan="2">Rincian</th>
+                <th rowspan="2" width="3%">No</th><th rowspan="2">Nama Pekerja</th><th rowspan="2" width="10%">Jabatan</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekapitulasi</th><th colspan="2">Rincian</th><th rowspan="2" class="th-total">TOTAL DITERIMA</th>
             </tr>
             <tr>
                 <th>Harian</th><th>Jam</th><th class="col-day">S</th><th class="col-day">S</th><th class="col-day">R</th><th class="col-day">K</th><th class="col-day">J</th><th class="col-day">S</th><th class="col-day">M</th><th width="4%">HK</th><th width="4%">½</th><th width="4%">Jam</th><th>Pokok</th><th>Lembur</th>
@@ -201,10 +202,9 @@
 
 <script>
     // =========================================================
-    // KONFIGURASI LIVE SYNC (PASTE URL DI BAWAH INI)
+    // URL GOOGLE SCRIPT ANDA
     // =========================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec"; 
-    // Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec";
     // =========================================================
 
     const days=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
@@ -220,13 +220,7 @@
         document.getElementById('projName').value=meta.p; 
         document.getElementById('vendName').value=meta.v; 
         loadHistOpt(); loadData();
-        
-        // Initial Sync Check
-        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec") {
-            setUiStatus('off'); // Belum disetting
-        } else {
-            setUiStatus('idle'); // Siap
-        }
+        setUiStatus('idle');
     }
 
     function repairData(){ if(!cur||typeof cur!=='object')cur={start:'',end:'',w:[]}; if(!Array.isArray(cur.w))cur.w=[]; if(!Array.isArray(hist))hist=[]; hist.forEach(h=>{if(!h.w)h.w=[]}); }
@@ -241,14 +235,13 @@
     }
 
     function queueSync() {
-        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec") return;
-        setUiStatus('wait');
+        if(!GOOGLE_SCRIPT_URL) return;
+        setUiStatus('syncing'); // Show yellow immediately
         if(syncTimer) clearTimeout(syncTimer);
-        syncTimer = setTimeout(performSync, 2000); // 2 detik delay
+        syncTimer = setTimeout(performSync, 2000); // 2 sec debounce
     }
 
     function performSync() {
-        setUiStatus('sync');
         const payload = { current: cur, history: hist, meta: meta };
         
         fetch(GOOGLE_SCRIPT_URL, {
@@ -256,23 +249,22 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(() => {
-            setUiStatus('ok');
+            setUiStatus('saved');
         }).catch(err => {
-            console.error(err); setUiStatus('err');
+            console.error(err); setUiStatus('error');
         });
     }
 
     function setUiStatus(s) {
         const p = document.getElementById('statusBadge');
+        const d = p.querySelector('.s-dot');
         const t = document.getElementById('sText');
-        p.className = 'status-pill ' + (s==='sync'?'syncing': s==='ok'?'saved': s==='err'?'error':'');
+        p.className = 'status-pill ' + s;
         
-        if(s==='off') { t.innerText = "Script URL Kosong"; p.style.background='rgba(0,0,0,0.5)'; }
-        else if(s==='idle') { t.innerText = "Live Ready"; }
-        else if(s==='wait') { t.innerText = "Menunggu..."; }
-        else if(s==='sync') { t.innerText = "Menyimpan..."; }
-        else if(s==='ok') { t.innerText = "Tersimpan"; setTimeout(()=>t.innerText="Live Ready", 3000); }
-        else if(s==='err') { t.innerText = "Gagal Sync"; }
+        if(s==='idle') { t.innerText = "Live Ready"; }
+        else if(s==='syncing') { t.innerText = "Menyimpan..."; }
+        else if(s==='saved') { t.innerText = "Tersimpan"; setTimeout(()=>setUiStatus('idle'), 3000); }
+        else if(s==='error') { t.innerText = "Gagal Sync"; }
     }
 
     const getData=()=>mode==='cur'?cur:hist[mode];
@@ -292,11 +284,10 @@
                 });
                 const pb=(nF*w.rate)+(nH*(w.rate*0.5)), po=nO*w.otRate, tot=pb+po; gt+=tot; gb+=pb; go+=po;
                 list.innerHTML+=`<details class="card"><summary class="card-head"><div class="u-info"><h3>${w.name}</h3><span class="u-role">${w.cat}</span></div><div class="u-money">Rp ${fmt(tot)}</div></summary><div class="card-body"><div class="bars">${bar}</div><div style="font-size:0.8rem;color:#64748b;display:flex;justify-content:space-between;margin-bottom:10px;"><span>Hadir: <b>${nF}</b></span><span>½: <b>${nH}</b></span><span>Lembur: <b>${nO} Jam</b></span></div><div class="btn-row"><button class="btn btn-white" onclick="edit(${i})">📝 Edit</button><button class="btn btn-red" onclick="del(${i})">🗑 Hapus</button></div></div></details>`;
-                pBody.innerHTML+=`<tr><td align="center">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td align="right">${fmt(w.rate)}</td><td align="right">${fmt(w.otRate)}</td>${pC}<td align="center">${nF}</td><td align="center">${nH}</td><td align="center">${nO}</td><td class="col-money">Rp ${fmt(pb)}</td><td class="col-money">Rp ${fmt(po)}</td></tr>`;
+                pBody.innerHTML+=`<tr><td align="center">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td align="right">${fmt(w.rate)}</td><td align="right">${fmt(w.otRate)}</td>${pC}<td align="center">${nF}</td><td align="center">${nH}</td><td align="center">${nO}</td><td class="col-money">Rp ${fmt(pb)}</td><td class="col-money">Rp ${fmt(po)}</td><td class="col-total">Rp ${fmt(tot)}</td></tr>`;
             });
         }
         document.getElementById('dispTotal').innerText="Rp "+fmt(gt); 
-        
         // Print Totals
         document.getElementById('sumBasic').innerText="Rp "+fmt(gb); document.getElementById('sumOt').innerText="Rp "+fmt(go); document.getElementById('sumGrand').innerText="Rp "+fmt(gt);
         document.getElementById('pProj').innerText=meta.p; document.getElementById('pVend').innerText=meta.v; document.getElementById('pStart').innerText=data.start; document.getElementById('pEnd').innerText=data.end;
