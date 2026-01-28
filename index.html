@@ -3,29 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll Online V13</title>
+    <title>Payroll Auto-Sync V14</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#0f172a; --accent:#2563eb; --bg:#f8fafc; --border:#e2e8f0; --text:#334155; --white:#ffffff; --google:#16a34a; }
+        :root { --primary:#0f172a; --accent:#2563eb; --bg:#f8fafc; --border:#e2e8f0; --text:#334155; --white:#ffffff; --green:#16a34a; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin:0; padding:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); padding-bottom:80px; }
 
         /* HEADER */
-        .header { background:var(--primary); color:white; padding:15px 20px 20px 20px; border-radius:0 0 24px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; }
+        .header { background:var(--primary); color:white; padding:15px 20px 20px 20px; border-radius:0 0 24px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; position: relative; }
+        
+        /* STATUS INDIKATOR (NEW) */
+        .cloud-status {
+            position: absolute; top: 15px; right: 20px;
+            background: rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 5px;
+            border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(4px);
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+        .dot.syncing { background: #facc15; animation: pulse 1s infinite; }
+        .dot.saved { background: #4ade80; }
+        .dot.error { background: #f87171; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
         .inp-mini { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:white; padding:8px 12px; border-radius:8px; margin-bottom:6px; width:100%; outline:none; font-family:inherit; font-size:0.9rem; }
-        .inp-title { font-weight:700; font-size:1rem; }
+        .inp-title { font-weight:700; font-size:1rem; width: 65%; /* Space for status */ }
         .total-strip { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); }
         .total-val { font-size:1.1rem; font-weight:700; color:#60a5fa; }
 
-        /* CONTROLS */
+        /* CONTROLS & LIST */
         .controls { padding:0 20px; display:flex; flex-direction:column; gap:10px; margin-bottom:15px; }
         .row-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .ctrl-el { padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--white); width:100%; outline:none; font-size:0.85rem; }
         .arch-badge { background:#fff7ed; color:#c2410c; padding:10px; border-radius:8px; font-size:0.8rem; text-align:center; border:1px solid #ffedd5; font-weight:600; }
-
-        /* LIST */
         .list-wrap { padding:0 20px; display:flex; flex-direction:column; gap:10px; }
+        
         details.card { background:var(--white); border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.03); overflow:hidden; }
         details.card[open] { border-color:var(--accent); box-shadow:0 4px 12px rgba(37,99,235,0.1); }
         summary.card-head { padding:12px 15px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; background:var(--white); }
@@ -44,18 +57,16 @@
         .btn-white { background:white; border:1px solid var(--border); color:var(--text); }
         .btn-red { background:#fee2e2; color:#ef4444; }
         .btn-blue { background:var(--accent); color:white; }
-        .btn-green { background:var(--google); color:white; }
 
-        /* ANALYTICS */
+        /* ANALYTICS & SYNC SETUP */
         .analytics-section { padding:20px; margin-top:20px; border-top:1px dashed var(--border); display:flex; flex-direction:column; gap:12px; }
         details.report-box { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
         details.report-box summary { padding:12px 15px; background:#f1f5f9; font-weight:600; font-size:0.9rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; }
         .report-content { padding:15px; }
         .print-btn-block { background:var(--primary); color:white; width:100%; padding:15px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; margin-top:10px; display:flex; justify-content:center; gap:10px;}
-
-        /* SYNC SECTION */
-        .sync-box { background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:12px; margin-top:10px; }
-        .inp-url { width:100%; padding:8px; border:1px solid #bbf7d0; border-radius:6px; font-size:0.8rem; margin-bottom:8px; color:#15803d; }
+        
+        .setup-box { background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:12px; }
+        .inp-url { width:100%; padding:8px; border:1px solid #bbf7d0; border-radius:6px; font-size:0.8rem; color:#15803d; }
 
         /* MODAL & FAB */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
@@ -98,6 +109,9 @@
 <body>
 
 <div class="header">
+    <div class="cloud-status" id="cStatus">
+        <div class="dot" id="cDot"></div> <span id="cText">Offline</span>
+    </div>
     <div style="margin-bottom:10px;">
         <input type="text" id="projName" class="inp-mini inp-title" placeholder="Nama Proyek" onchange="saveMeta()">
         <input type="text" id="vendName" class="inp-mini" placeholder="Nama Vendor" onchange="saveMeta()">
@@ -126,15 +140,15 @@
 <button class="fab" onclick="openAddModal()">+</button>
 
 <div class="analytics-section">
-    <h4 style="margin:0 0 5px 5px; color:#64748b; font-size:0.8rem; text-transform:uppercase;">Cloud Sync & Laporan</h4>
+    <h4 style="margin:0 0 5px 5px; color:#64748b; font-size:0.8rem; text-transform:uppercase;">Laporan & Cloud</h4>
 
-    <div class="sync-box">
-        <input type="text" id="gScriptUrl" class="inp-url" placeholder="Tempel URL Web App Google Script disini..." onchange="saveUrl()">
-        <button onclick="syncToCloud()" class="btn btn-green" id="btnSync">
-            ☁️ Upload ke Google Sheet
-        </button>
-        <div id="syncStatus" style="font-size:0.8rem; margin-top:5px; color:#15803d; display:none;">Sedang mengirim...</div>
-    </div>
+    <details class="report-box" id="setupDetails">
+        <summary>⚙️ Setup Google Sheet</summary>
+        <div class="report-content setup-box">
+            <p style="margin:0 0 5px 0; font-size:0.8rem; color:#166534">Mhttps://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec</p>
+            <input type="text" id="gScriptUrl" class="inp-url" placeholder="https://script.google.com/macros/s/..." onchange="saveUrl()">
+        </div>
+    </details>
 
     <details class="report-box">
         <summary onclick="renderTrend()">📈 Trend Keuangan Mingguan</summary>
@@ -199,17 +213,80 @@
     let hist=JSON.parse(localStorage.getItem('v13_hist'))||[];
     let meta=JSON.parse(localStorage.getItem('v13_meta'))||{p:'',v:''};
     let scriptUrl = localStorage.getItem('v13_url') || '';
-    let mode='cur'; let eIdx=-1; let chTrend, chAll; const fmt=n=>new Intl.NumberFormat('id-ID').format(n);
+    let mode='cur'; let eIdx=-1; let chTrend, chAll; 
+    let syncTimer = null; // Timer for auto-save
 
-    function init(){ repairData(); document.getElementById('projName').value=meta.p; document.getElementById('vendName').value=meta.v; document.getElementById('gScriptUrl').value=scriptUrl; loadHistOpt(); loadData(); }
+    const fmt=n=>new Intl.NumberFormat('id-ID').format(n);
+
+    function init(){ repairData(); document.getElementById('projName').value=meta.p; document.getElementById('vendName').value=meta.v; document.getElementById('gScriptUrl').value=scriptUrl; loadHistOpt(); loadData(); updateStatusUI(); }
     function repairData(){ if(!cur||typeof cur!=='object')cur={start:'',end:'',w:[]}; if(!Array.isArray(cur.w))cur.w=[]; if(!Array.isArray(hist))hist=[]; hist.forEach(h=>{if(!h.w)h.w=[]}); }
-    function saveMeta(){ meta.p=document.getElementById('projName').value; meta.v=document.getElementById('vendName').value; localStorage.setItem('v13_meta',JSON.stringify(meta)); }
-    function saveUrl(){ scriptUrl=document.getElementById('gScriptUrl').value; localStorage.setItem('v13_url', scriptUrl); }
+    
+    // --- CORE SAVE & SYNC ---
+    function saveMeta(){ meta.p=document.getElementById('projName').value; meta.v=document.getElementById('vendName').value; localStorage.setItem('v13_meta',JSON.stringify(meta)); triggerAutoSync(); }
+    function saveUrl(){ scriptUrl=document.getElementById('gScriptUrl').value; localStorage.setItem('v13_url', scriptUrl); triggerAutoSync(); }
+    
     function save(){ 
         const d=getData(); d.start=document.getElementById('dStart').value; d.end=document.getElementById('dEnd').value;
         if(mode==='cur')localStorage.setItem('v13_cur',JSON.stringify(d)); else{hist[mode]=d;localStorage.setItem('v13_hist',JSON.stringify(hist));loadHistOpt();}
-        render(); 
+        render();
+        triggerAutoSync(); // TRIGGER AUTO SYNC
     }
+
+    // --- AUTO SYNC LOGIC ---
+    function triggerAutoSync() {
+        if(!scriptUrl) { updateStatusUI('off'); return; }
+        
+        // Update UI to "Waiting..."
+        updateStatusUI('waiting');
+        
+        // Reset Timer
+        if(syncTimer) clearTimeout(syncTimer);
+        
+        // Set debounce timer (e.g., 3 seconds after last edit)
+        syncTimer = setTimeout(() => {
+            performSync();
+        }, 3000);
+    }
+
+    function performSync() {
+        updateStatusUI('syncing');
+        const payload = { current: cur, history: hist, meta: meta };
+        
+        fetch(scriptUrl, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            updateStatusUI('saved');
+        }).catch(err => {
+            console.error(err);
+            updateStatusUI('error');
+        });
+    }
+
+    function updateStatusUI(status) {
+        const dot = document.getElementById('cDot');
+        const text = document.getElementById('cText');
+        const box = document.getElementById('cStatus');
+        
+        box.style.display = 'flex';
+        dot.className = 'dot'; // Reset
+
+        if(!scriptUrl || status === 'off') {
+            dot.style.background = '#ccc'; text.innerText = "Setup Needed";
+        } else if (status === 'waiting') {
+            dot.style.background = '#facc15'; text.innerText = "Menunggu...";
+        } else if (status === 'syncing') {
+            dot.classList.add('syncing'); text.innerText = "Menyimpan...";
+        } else if (status === 'saved') {
+            dot.classList.add('saved'); text.innerText = "Tersimpan";
+            // Hide after 5 seconds
+            setTimeout(() => { if(text.innerText === 'Tersimpan') text.innerText = "Cloud Aktif"; }, 5000);
+        } else if (status === 'error') {
+            dot.classList.add('error'); text.innerText = "Gagal Sync";
+        }
+    }
+
     const getData=()=>mode==='cur'?cur:hist[mode];
 
     function render(){
@@ -234,34 +311,7 @@
         document.getElementById('pProj').innerText=meta.p; document.getElementById('pVend').innerText=meta.v; document.getElementById('pStart').innerText=data.start; document.getElementById('pEnd').innerText=data.end;
     }
 
-    function syncToCloud() {
-        if(!scriptUrl) return alert("https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec");
-        const btn = document.getElementById('btnSync');
-        const status = document.getElementById('syncStatus');
-        btn.innerText = "Mengirim..."; btn.disabled = true; status.style.display = 'block';
-
-        const payload = {
-            current: cur,
-            history: hist,
-            meta: meta
-        };
-
-        // Menggunakan mode no-cors karena Apps Script redirect
-        fetch(scriptUrl, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).then(() => {
-            alert("Data berhasil dikirim ke Google Sheet!");
-            btn.innerText = "☁️ Upload ke Google Sheet"; btn.disabled = false; status.style.display = 'none';
-        }).catch(err => {
-            alert("Gagal mengirim: " + err);
-            btn.innerText = "☁️ Upload ke Google Sheet"; btn.disabled = false; status.style.display = 'none';
-        });
-    }
-
-    // Standard CRUD
+    // CRUD
     function openAddModal(){document.getElementById('mAdd').classList.add('active');}
     function closeM(id){document.getElementById(id).classList.remove('active');}
     function addWorker(e){try{e.preventDefault();const w={id:Date.now(),name:document.getElementById('nName').value,cat:document.getElementById('nCat').value,rate:Number(document.getElementById('nRate').value),otRate:Number(document.getElementById('nOt').value),att:Array(7).fill({val:0,ot:0})};getData().w.push(w);save();closeM('mAdd');document.getElementById('nName').value='';}catch(x){alert(x.message);repairData();}}
@@ -276,6 +326,7 @@
 
     function loadHistOpt(){const s=document.getElementById('histSel');s.innerHTML='<option value="cur">Minggu Ini (Aktif)</option>';hist.forEach((h,i)=>s.innerHTML+=`<option value="${i}">Arsip: ${h.start} - ${h.end}</option>`);}
     function loadData(){mode=document.getElementById('histSel').value;const d=getData();document.getElementById('dStart').value=d.start;document.getElementById('dEnd').value=d.end;const isArc=mode!=='cur';document.getElementById('archMsg').style.display=isArc?'block':'none';document.getElementById('btnArch').style.display=isArc?'none':'block';if(isArc)mode=Number(mode);render();}
+    function closeM(id){document.getElementById(id).classList.remove('active');}
 
     init();
 </script>
