@@ -201,9 +201,9 @@
 
 <script>
     // =========================================================
-    // KONFIGURASI LIVE SYNC (https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec)
+    // KONFIGURASI LIVE SYNC (PASTE URL DI BAWAH INI)
     // =========================================================
-    const GOOGLE_SCRIPT_URL = "PASTE_URL_WEB_APP_ANDA_DISINI"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec"; 
     // Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
     // =========================================================
 
@@ -222,7 +222,7 @@
         loadHistOpt(); loadData();
         
         // Initial Sync Check
-        if(GOOGLE_SCRIPT_URL === "PASTE_URL_WEB_APP_ANDA_DISINI") {
+        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec") {
             setUiStatus('off'); // Belum disetting
         } else {
             setUiStatus('idle'); // Siap
@@ -241,7 +241,7 @@
     }
 
     function queueSync() {
-        if(GOOGLE_SCRIPT_URL === "PASTE_URL_WEB_APP_ANDA_DISINI") return;
+        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec") return;
         setUiStatus('wait');
         if(syncTimer) clearTimeout(syncTimer);
         syncTimer = setTimeout(performSync, 2000); // 2 detik delay
