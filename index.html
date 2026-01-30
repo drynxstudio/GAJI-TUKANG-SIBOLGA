@@ -3,367 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll Cloud V16</title>
+    <title>Payroll V17 Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#0f172a; --accent:#2563eb; --bg:#f8fafc; --border:#e2e8f0; --text:#334155; --white:#ffffff; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin:0; padding:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); padding-bottom:80px; }
+        :root { --p:#0f172a; --a:#2563eb; --bg:#f8fafc; --card:#fff; --brd:#e2e8f0; --txt:#334155; }
+        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { margin:0; padding:0; font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--txt); padding-bottom:100px; }
 
-        /* LOADING OVERLAY */
-        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-        .spinner { width:40px; height:40px; border:4px solid #e2e8f0; border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* LOADING */
+        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:opacity 0.5s; }
+        .spin { width:40px; height:40px; border:4px solid #cbd5e1; border-top:4px solid var(--a); border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
         /* HEADER */
-        .header { background:var(--primary); color:white; padding:15px 20px 20px 20px; border-radius:0 0 24px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
-        .status-pill { position:absolute; top:15px; right:20px; background:rgba(0,0,0,0.3); padding:4px 10px; border-radius:20px; font-size:0.7rem; font-weight:600; display:flex; align-items:center; gap:5px; border:1px solid rgba(255,255,255,0.1); }
-        .s-dot { width:8px; height:8px; border-radius:50%; background:#ccc; }
-        .s-dot.syncing { background:#fbbf24; animation:pulse 1s infinite; }
-        .s-dot.ok { background:#4ade80; }
-        .s-dot.err { background:#ef4444; }
-        @keyframes pulse { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
+        .head { background:var(--p); color:#fff; padding:20px; border-radius:0 0 24px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
+        .sync-badge { position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:20px; font-size:0.75rem; font-weight:600; display:flex; gap:6px; align-items:center; border:1px solid rgba(255,255,255,0.2); }
+        .dot { width:8px; height:8px; border-radius:50%; background:#ccc; }
+        .dot.ok { background:#4ade80; box-shadow:0 0 5px #4ade80; }
+        .dot.busy { background:#facc15; animation:pulse 1s infinite; }
+        @keyframes pulse { 50%{opacity:0.5} }
 
-        .inp-mini { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:white; padding:8px 12px; border-radius:8px; margin-bottom:6px; width:100%; outline:none; font-family:inherit; font-size:0.9rem; }
-        .inp-title { font-weight:700; font-size:1rem; width:60%; }
-        .total-strip { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); }
-        .total-val { font-size:1.1rem; font-weight:700; color:#60a5fa; }
+        .inp-t { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px; border-radius:8px; width:100%; margin-bottom:8px; outline:none; font-family:inherit; }
+        .inp-lg { font-weight:700; font-size:1.1rem; }
+        .tot-box { display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1); }
+        .tot-v { font-size:1.2rem; font-weight:800; color:#60a5fa; }
 
-        /* CONTROLS */
-        .controls { padding:0 20px; display:flex; flex-direction:column; gap:10px; margin-bottom:15px; }
-        .row-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .ctrl-el { padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--white); width:100%; outline:none; font-size:0.85rem; }
-        
-        /* LIST */
-        .list-wrap { padding:0 20px; display:flex; flex-direction:column; gap:10px; }
-        details.card { background:var(--white); border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.03); overflow:hidden; }
-        details.card[open] { border-color:var(--accent); box-shadow:0 4px 12px rgba(37,99,235,0.1); }
-        summary.card-head { padding:12px 15px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; background:var(--white); }
-        summary.card-head::-webkit-details-marker { display:none; }
-        .u-info h3 { margin:0; font-size:0.95rem; color:var(--text); }
-        .u-role { font-size:0.7rem; font-weight:700; text-transform:uppercase; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; }
-        .u-money { font-weight:700; color:var(--accent); font-size:0.95rem; }
-        summary.card-head::after { content:'+'; font-size:1.2rem; color:#cbd5e1; margin-left:10px; }
-        details[open] summary.card-head::after { content:'-'; color:var(--accent); }
-        .card-body { padding:15px; background:#f8fafc; border-top:1px solid var(--border); }
-        .bars { display:flex; height:6px; border-radius:3px; overflow:hidden; margin-bottom:12px; background:#e2e8f0; }
-        .seg { flex:1; border-right:1px solid white; }
-        .bg-1 { background:#10b981; } .bg-05 { background:#8b5cf6; } .bg-0 { background:transparent; }
-        .btn-row { display:flex; gap:10px; margin-top:10px; }
-        .btn { flex:1; padding:10px; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center; }
-        .btn-white { background:white; border:1px solid var(--border); color:var(--text); }
-        .btn-red { background:#fee2e2; color:#ef4444; }
-        .btn-blue { background:var(--accent); color:white; }
+        /* BODY */
+        .wrap { padding:0 20px; display:flex; flex-direction:column; gap:12px; }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .ctl { padding:12px; border-radius:10px; border:1px solid var(--brd); background:#fff; width:100%; outline:none; font-size:0.9rem; }
+        .arch-mode { background:#fff7ed; color:#c2410c; padding:12px; border-radius:10px; border:1px solid #ffedd5; font-weight:600; text-align:center; display:none; }
+
+        /* CARDS */
+        details.c { background:#fff; border:1px solid var(--brd); border-radius:12px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.03); }
+        details.c[open] { border-color:var(--a); box-shadow:0 8px 15px rgba(37,99,235,0.1); }
+        summary.h { padding:15px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+        summary.h::-webkit-details-marker { display:none; }
+        .role { font-size:0.7rem; font-weight:700; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b; text-transform:uppercase; }
+        .bar { display:flex; height:6px; background:#e2e8f0; border-radius:3px; margin-bottom:12px; overflow:hidden; }
+        .seg { flex:1; border-right:1px solid #fff; }
+        .bg1 { background:#10b981; } .bg05 { background:#8b5cf6; } .bg0 { background:transparent; }
+        .c-body { padding:15px; background:#f8fafc; border-top:1px solid var(--brd); }
+        .btns { display:flex; gap:10px; margin-top:10px; }
+        .btn { flex:1; padding:10px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:5px; }
+        .b-w { background:#fff; border:1px solid var(--brd); } 
+        .b-b { background:var(--a); color:#fff; }
+        .b-r { background:#fee2e2; color:#ef4444; }
 
         /* ANALYTICS */
-        .analytics-section { padding:20px; margin-top:20px; border-top:1px dashed var(--border); display:flex; flex-direction:column; gap:12px; }
-        details.report-box { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-        details.report-box summary { padding:12px 15px; background:#f1f5f9; font-weight:600; font-size:0.9rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; }
-        .report-content { padding:15px; }
-        .print-btn-block { background:var(--primary); color:white; width:100%; padding:15px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; margin-top:10px; display:flex; justify-content:center; gap:10px;}
+        .anl { margin-top:20px; border-top:1px dashed var(--brd); padding:20px; }
+        details.rep { background:#fff; border:1px solid var(--brd); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+        details.rep summary { padding:12px 15px; background:#f1f5f9; font-weight:600; cursor:pointer; list-style:none; display:flex; justify-content:space-between; }
+        .p-btn { width:100%; background:var(--p); color:#fff; padding:15px; border-radius:12px; font-weight:700; border:none; margin-top:10px; display:flex; justify-content:center; gap:10px; cursor:pointer; }
 
         /* MODAL */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
-        .modal.active { display:flex; }
-        .m-box { background:white; width:90%; max-width:450px; border-radius:20px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.2); }
+        .mod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:900; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+        .mod.on { display:flex; }
+        .box { background:#fff; width:90%; max-width:450px; border-radius:20px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.2); max-height:85vh; overflow-y:auto; }
         
         /* BULK ACTIONS */
-        .bulk-actions { display:flex; gap:5px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #e2e8f0; }
-        .btn-bulk { font-size:0.75rem; padding:6px 10px; border-radius:15px; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; flex:1; text-align:center; }
-        .btn-bulk:hover { background:#e2e8f0; }
+        .bulk { display:flex; gap:5px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed var(--brd); }
+        .b-bulk { flex:1; font-size:0.75rem; padding:8px 5px; border-radius:20px; border:1px solid var(--brd); background:#f8fafc; cursor:pointer; text-align:center; }
+        .b-bulk:active { background:#e2e8f0; }
 
-        .edit-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:0.85rem; }
-        .rad-grp { display:flex; gap:5px; }
-        .rad-btn { padding:4px 10px; background:#f1f5f9; border-radius:15px; cursor:pointer; display:flex; align-items:center; gap:4px; }
-        .rad-btn input { display:none; } .rad-btn span { width:8px; height:8px; border-radius:50%; border:2px solid #cbd5e1; }
-        .rad-btn input:checked + span { background:var(--accent); border-color:var(--accent); }
-        .inp-ot { width:40px; padding:5px; border:1px solid var(--border); border-radius:6px; text-align:center; }
-        .fab { position:fixed; bottom:20px; right:20px; width:50px; height:50px; background:var(--accent); color:white; border-radius:50%; border:none; font-size:24px; box-shadow:0 8px 20px rgba(37,99,235,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:99; }
+        .row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+        .chk { display:flex; gap:5px; }
+        .chk label { padding:5px 10px; background:#f1f5f9; border-radius:15px; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:5px; }
+        .chk input { display:none; }
+        .chk span { width:10px; height:10px; border-radius:50%; border:2px solid #cbd5e1; }
+        .chk input:checked + span { background:var(--a); border-color:var(--a); }
+        .i-ot { width:45px; padding:5px; border:1px solid var(--brd); border-radius:6px; text-align:center; }
+
+        .fab { position:fixed; bottom:20px; right:20px; width:55px; height:55px; background:var(--a); color:#fff; border-radius:50%; border:none; font-size:24px; box-shadow:0 8px 25px rgba(37,99,235,0.4); display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:800; }
 
         /* PRINT */
-        #printArea { display:none; }
+        #print { display:none; }
         @media print {
-            body { background:white; padding:0; }
-            .header, .controls, .list-wrap, .fab, .modal, .analytics-section, #loader { display:none !important; }
-            #printArea { display:block; position:absolute; top:0; left:0; width:100%; padding:15px; box-sizing:border-box; }
-            .p-head { text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:15px; }
-            .p-title { font-size:16px; font-weight:bold; text-transform:uppercase; }
-            .p-meta { display:flex; justify-content:space-between; font-size:11px; margin-top:5px; }
-            .p-table { width:100%; border-collapse:collapse; font-size:9px; font-family:'Arial', sans-serif; margin-bottom:15px; }
-            .p-table th, .p-table td { border:1px solid #000; padding:4px 5px; }
-            .p-table th { background:#f0f0f0 !important; -webkit-print-color-adjust:exact; text-align:center; font-weight:bold; }
-            .col-money { text-align:right; white-space:nowrap; width:12%; }
-            .col-total { text-align:right; white-space:nowrap; width:13%; font-weight:bold; border-left:2px solid #000 !important; }
-            .col-day { width:15px; text-align:center; padding:2px !important; }
-            .total-wrapper { display:flex; justify-content:flex-end; margin-top:10px; }
-            .total-table { width:50%; border-collapse:collapse; font-family:'Arial', sans-serif; border:2px solid #000; }
-            .total-table td { padding:5px 10px; border:1px solid #000; font-size:10px; }
-            .tr-grand { background:#ddd !important; -webkit-print-color-adjust:exact; }
-            .tr-grand td { padding:10px; font-size:14px; border-top:2px solid #000; font-weight:bold; }
-            .p-sign { display:flex; justify-content:space-around; margin-top:25px; page-break-inside:avoid; }
-            .sign-box { text-align:center; width:35%; }
-            .sign-line { border-bottom:1px solid #000; margin-top:50px; }
+            body { background:#fff; }
+            .header, .controls, .list-wrap, .fab, .mod, .anl, #loader { display:none !important; }
+            #print { display:block; position:absolute; top:0; left:0; width:100%; padding:20px; }
+            table { width:100%; border-collapse:collapse; font-size:10px; font-family:sans-serif; margin-bottom:10px; }
+            th, td { border:1px solid #000; padding:4px; }
+            th { background:#eee !important; -webkit-print-color-adjust:exact; text-align:center; }
+            .r { text-align:right; } .c { text-align:center; }
+            .tot-t { width:50%; margin-left:auto; border:2px solid #000; }
+            .tot-t td { padding:5px; font-weight:bold; }
+            .sign { display:flex; justify-content:space-around; margin-top:40px; }
+            .sign div { text-align:center; width:30%; }
+            .line { border-bottom:1px solid #000; margin-top:60px; }
         }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div class="spinner"></div>
-    <p style="margin-top:15px; font-weight:600; color:#64748b;">Sinkronisasi Data...</p>
-</div>
+<div id="loader"><div class="spin"></div><p>Menghubungkan ke Database...</p></div>
 
 <div class="header">
-    <div class="status-pill">
-        <div class="s-dot" id="sDot"></div> <span id="sText">Menghubungkan...</span>
+    <div class="sync-badge"><div class="dot" id="dot"></div><span id="st">Connecting...</span></div>
+    <div style="margin-bottom:10px">
+        <input type="text" id="pName" class="inp-t inp-lg" placeholder="Nama Proyek" onchange="upMeta()">
+        <input type="text" id="vName" class="inp-t" placeholder="Vendor" onchange="upMeta()">
     </div>
-    <div style="margin-bottom:10px;">
-        <input type="text" id="projName" class="inp-mini inp-title" placeholder="Nama Proyek" onchange="saveMeta()">
-        <input type="text" id="vendName" class="inp-mini" placeholder="Nama Vendor" onchange="saveMeta()">
-    </div>
-    <div class="total-strip">
-        <span class="total-lbl">Pengeluaran Minggu Ini</span>
-        <div class="total-val" id="dispTotal">Rp 0</div>
+    <div class="tot-box">
+        <span style="font-size:0.8rem; opacity:0.8">TOTAL MINGGU INI</span>
+        <div class="tot-v" id="dispTot">Rp 0</div>
     </div>
 </div>
 
 <div class="controls">
-    <div class="row-grid">
-        <select id="histSel" class="ctrl-el" onchange="loadData()">
-            <option value="cur">Minggu Ini (Aktif)</option>
-        </select>
-        <button id="btnArch" onclick="doArchive()" class="ctrl-el" style="background:var(--primary); color:white; font-weight:bold; cursor:pointer;">Arsipkan</button>
+    <div class="grid">
+        <select id="sel" class="ctl" onchange="loadView()"><option value="c">Minggu Ini (Aktif)</option></select>
+        <button onclick="arch()" class="ctl" style="background:var(--p); color:#fff; font-weight:bold">Arsipkan</button>
     </div>
-    <div class="row-grid">
-        <input type="date" id="dStart" class="ctrl-el" onchange="save()">
-        <input type="date" id="dEnd" class="ctrl-el" onchange="save()">
+    <div class="grid">
+        <input type="date" id="dS" class="ctl" onchange="saveLoc()">
+        <input type="date" id="dE" class="ctl" onchange="saveLoc()">
     </div>
+    <div id="msg" class="arch-mode">⚠️ MODE ARSIP (Bisa Edit)</div>
 </div>
 
-<div id="list" class="list-wrap"></div>
-<button class="fab" onclick="openAddModal()">+</button>
+<div id="list" class="wrap"></div>
+<button class="fab" onclick="addM()">+</button>
 
-<div class="analytics-section">
-    <h4 style="margin:0 0 5px 5px; color:#64748b; font-size:0.8rem; text-transform:uppercase;">Laporan & Rekapitulasi</h4>
-    <details class="report-box">
-        <summary onclick="renderTrend()">📈 Trend Keuangan Mingguan</summary>
-        <div class="report-content">
-            <div style="height:200px"><canvas id="chartTrend"></canvas></div>
-            <table style="width:100%; font-size:0.85rem; margin-top:15px; border-collapse:collapse;"><tbody id="trendTable"></tbody></table>
-        </div>
-    </details>
-    <button class="print-btn-block" onclick="window.print()">🖨️ Cetak Nota (PDF)</button>
+<div class="anl">
+    <h4 style="margin:0 0 10px 5px; color:#64748b; font-size:0.85rem">LAPORAN</h4>
+    <details class="rep"><summary onclick="rTrend()">📈 Trend Keuangan</summary><div style="padding:15px"><canvas id="cTr" height="200"></canvas></div></details>
+    <details class="rep"><summary onclick="rAll()">📑 Rekap Total</summary><div style="padding:15px"><canvas id="cAll" height="200"></canvas></div></details>
+    <button class="p-btn" onclick="window.print()">🖨️ Cetak Nota PDF</button>
 </div>
 
-<div id="mAdd" class="modal"><div class="m-box"><h3 style="margin-top:0">Tambah Pekerja</h3><form onsubmit="addWorker(event)"><input type="text" id="nName" class="ctrl-el" placeholder="Nama Lengkap" required style="margin-bottom:10px;"><select id="nCat" class="ctrl-el" style="margin-bottom:10px;"><option value="Tukang">Tukang</option><option value="Kernet">Kernet</option><option value="Mandor">Mandor</option></select><div class="row-grid"><input type="number" id="nRate" class="ctrl-el" placeholder="Harian" value="150000"><input type="number" id="nOt" class="ctrl-el" placeholder="Lembur" value="25000"></div><div class="btn-row" style="margin-top:20px;"><button type="button" class="btn btn-white" onclick="closeM('mAdd')">Batal</button><button type="submit" class="btn btn-blue">Simpan</button></div></form></div></div>
+<div id="mA" class="mod"><div class="box"><h3>Tambah Pekerja</h3><form onsubmit="add(event)"><input id="nA" class="ctl" placeholder="Nama" required style="margin-bottom:10px"><select id="cA" class="ctl" style="margin-bottom:10px"><option>Tukang</option><option>Kernet</option><option>Mandor</option></select><div class="grid"><input type="number" id="rA" class="ctl" value="150000" placeholder="Rp/Hari"><input type="number" id="oA" class="ctl" value="25000" placeholder="Rp/Jam"></div><div class="btns" style="margin-top:20px"><button type="button" class="btn b-w" onclick="cls('mA')">Batal</button><button type="submit" class="btn b-b">Simpan</button></div></form></div></div>
 
-<div id="mEdit" class="modal">
-    <div class="m-box">
-        <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Edit Absen: <span id="eName" style="color:var(--accent)"></span></h3>
+<div id="mE" class="mod">
+    <div class="box">
+        <h3 style="margin-top:0">Edit: <span id="eT" style="color:var(--a)"></span></h3>
         
-        <div class="bulk-actions">
-            <div class="btn-bulk" onclick="setBulk('1')">✅ Semua Hadir</div>
-            <div class="btn-bulk" onclick="setBulk('0.5')">½ Semua 1/2</div>
-            <div class="btn-bulk" onclick="setBulkOt()">🕒 Semua Lembur</div>
+        <div class="bulk">
+            <div class="b-bulk" onclick="bulkSet(1)">✅ Semua Full</div>
+            <div class="b-bulk" onclick="bulkSet(0.5)">½ Semua 1/2</div>
+            <div class="b-bulk" onclick="bulkOt()">🕒 Semua Lembur</div>
         </div>
 
-        <form onsubmit="saveAtt(event)">
-            <div id="eRows"></div>
-            <div class="btn-row" style="margin-top:15px;">
-                <button type="button" class="btn btn-white" onclick="closeM('mEdit')">Batal</button>
-                <button type="submit" class="btn btn-blue">Update</button>
+        <form onsubmit="upd(event)">
+            <div id="eR"></div>
+            <div class="btns" style="margin-top:15px">
+                <button type="button" class="btn b-w" onclick="cls('mE')">Batal</button>
+                <button type="submit" class="btn b-b">Update</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="printArea">
-    <div class="p-head">
-        <div class="p-title">NOTA PEMBAYARAN UPAH</div>
-        <div class="p-meta"><span><b>Proyek:</b> <span id="pProj"></span></span><span><b>Vendor:</b> <span id="pVend"></span></span></div>
-        <div class="p-meta"><span><b>Periode:</b> <span id="pStart"></span> s/d <span id="pEnd"></span></span></div>
+<div id="print">
+    <div style="text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:15px;">
+        <h2 style="margin:0">NOTA PEMBAYARAN UPAH</h2>
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:5px;">
+            <span>Proyek: <b id="pp"></b> | Vendor: <b id="pv"></b></span>
+            <span>Periode: <b id="pt"></b></span>
+        </div>
     </div>
-    <table class="p-table">
+    <table>
         <thead>
-            <tr><th rowspan="2" width="3%">No</th><th rowspan="2">Nama Pekerja</th><th rowspan="2" width="10%">Jabatan</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekapitulasi</th><th colspan="2">Rincian</th><th rowspan="2" class="th-total">TOTAL DITERIMA</th></tr>
-            <tr><th>Harian</th><th>Jam</th><th class="col-day">S</th><th class="col-day">S</th><th class="col-day">R</th><th class="col-day">K</th><th class="col-day">J</th><th class="col-day">S</th><th class="col-day">M</th><th width="4%">HK</th><th width="4%">½</th><th width="4%">Jam</th><th>Pokok</th><th>Lembur</th></tr>
+            <tr><th rowspan="2">No</th><th rowspan="2">Nama</th><th rowspan="2">Jab</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekap</th><th colspan="2">Bayar (Rp)</th><th rowspan="2">TOTAL</th></tr>
+            <tr><th>Hr</th><th>Jm</th><th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th><th>M</th><th>H</th><th>½</th><th>J</th><th>Pokok</th><th>Lembur</th></tr>
         </thead>
-        <tbody id="pBody"></tbody>
+        <tbody id="pbd"></tbody>
     </table>
-    <div class="total-wrapper">
-        <table class="total-table">
-            <tr><td class="total-label">Total Gaji Pokok</td><td class="total-value" id="sumBasic"></td></tr>
-            <tr><td class="total-label">Total Uang Lembur</td><td class="total-value" id="sumOt"></td></tr>
-            <tr class="tr-grand"><td style="text-transform:uppercase;">TOTAL TAGIHAN</td><td style="text-align:right" id="sumGrand"></td></tr>
+    <div style="display:flex; justify-content:flex-end">
+        <table class="tot-t">
+            <tr><td>Total Gaji Pokok</td><td class="r" id="tGp"></td></tr>
+            <tr><td>Total Lembur</td><td class="r" id="tGl"></td></tr>
+            <tr style="background:#ddd"><td>TOTAL TAGIHAN</td><td class="r" id="tGt"></td></tr>
         </table>
     </div>
-    <div class="p-sign">
-        <div class="sign-box"><div>Disetujui,</div><div style="font-weight:bold; font-size:10px;">Site Manager</div><div class="sign-line"></div><div>( ........................... )</div></div>
-        <div class="sign-box"><div>Dibuat,</div><div style="font-weight:bold; font-size:10px;">Mandor</div><div class="sign-line"></div><div>( ........................... )</div></div>
+    <div class="sign">
+        <div>Disetujui,<div style="font-size:10px">Site Manager</div><div class="line"></div>( ................. )</div>
+        <div>Dibuat,<div style="font-size:10px">Mandor</div><div class="line"></div>( ................. )</div>
     </div>
 </div>
 
 <script>
-    // =========================================================
-    // PASTE URL SCRIPT ANDA DISINI (YANG V16/UPDATE)
-    // =========================================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec"; 
-    // =========================================================
+    // ==========================================
+    // MASUKKAN URL SCRIPT V16 ANDA DI SINI
+    // ==========================================
+    const API = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec";
+    // ==========================================
 
-    const days=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-    let cur={start:'',end:'',w:[]}; let hist=[]; let meta={p:'',v:''};
-    let mode='cur'; let eIdx=-1; let chTrend; let syncTimer=null;
-    const fmt=n=>new Intl.NumberFormat('id-ID').format(n);
+    const dys=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    let d={c:{w:[],start:'',end:''},h:[],m:{p:'',v:''}};
+    let idx=-1; let tmr; let ch1,ch2;
+    const f=n=>new Intl.NumberFormat('id-ID').format(n);
 
     // INIT
     async function init() {
-        if(!API_URL || API_URL.includes("PASTE")) {
-            document.getElementById('loader').style.display='none';
-            alert("Harap Edit Code dan Masukkan URL Google Script!");
-            return;
-        }
-        
         try {
-            // FETCH FROM CLOUD (GET)
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            
-            if(data) {
-                if(data.current) cur = data.current;
-                if(data.history) hist = data.history;
-                if(data.meta) meta = data.meta;
+            if(API.includes("AKfyc")) {
+                const r = await fetch(API);
+                const j = await r.json();
+                if(j && j.current) d = {c:j.current, h:j.history||[], m:j.meta||{p:'',v:''}};
             }
-            
-            setUi('ok');
-        } catch (e) {
-            console.error(e);
-            setUi('err');
-            // Fallback to local if offline
-            const lc = JSON.parse(localStorage.getItem('v16_data'));
-            if(lc) { cur=lc.cur; hist=lc.hist; meta=lc.meta; }
-        }
+        } catch(e) { console.log(e); } // Fallback to memory if fail
         
-        document.getElementById('loader').style.display='none';
-        document.getElementById('projName').value = meta.p;
-        document.getElementById('vendName').value = meta.v;
-        loadHistOpt(); loadData();
+        document.getElementById('loader').style.opacity='0';
+        setTimeout(()=>document.getElementById('loader').style.display='none',500);
+        
+        renderSel();
+        loadView();
+        stat('ok','Online');
     }
 
-    // SYNC TO CLOUD (POST)
-    function save() {
-        // Save Local First
-        const d = getData();
-        d.start = document.getElementById('dStart').value;
-        d.end = document.getElementById('dEnd').value;
-        if(mode!=='cur'){ hist[mode]=d; }
+    // STATE MANAGER
+    function cur() { 
+        const s = document.getElementById('sel').value;
+        return s==='c' ? d.c : d.h[s]; 
+    }
+    
+    function saveLoc() {
+        const c = cur();
+        c.start = document.getElementById('dS').value;
+        c.end = document.getElementById('dE').value;
+        render(); sync();
+    }
+
+    function upMeta() {
+        d.m.p = document.getElementById('pName').value;
+        d.m.v = document.getElementById('vName').value;
+        sync();
+    }
+
+    function sync() {
+        stat('busy','Menyimpan...');
+        if(tmr) clearTimeout(tmr);
+        tmr = setTimeout(async ()=>{
+            try {
+                await fetch(API, {method:'POST', mode:'no-cors', body:JSON.stringify({current:d.c, history:d.h, meta:d.m})});
+                stat('ok','Tersimpan');
+            } catch(e){ stat('err','Gagal Sync'); }
+        }, 2000);
+    }
+
+    function stat(s,t) {
+        const d = document.getElementById('dot'), tx = document.getElementById('st');
+        d.className = 'dot '+s; tx.innerText = t;
+    }
+
+    // UI RENDER
+    function loadView() {
+        const s = document.getElementById('sel').value;
+        const c = cur();
         
-        localStorage.setItem('v16_data', JSON.stringify({cur, hist, meta}));
+        document.getElementById('pName').value = d.m.p;
+        document.getElementById('vName').value = d.m.v;
+        document.getElementById('dS').value = c.start;
+        document.getElementById('dE').value = c.end;
+        
+        const isArch = s !== 'c';
+        document.getElementById('msg').style.display = isArch ? 'block':'none';
+        
         render();
-        
-        // Debounce Cloud Sync
-        setUi('sync');
-        if(syncTimer) clearTimeout(syncTimer);
-        syncTimer = setTimeout(pushToCloud, 2000);
     }
 
-    function pushToCloud() {
-        const payload = { current: cur, history: hist, meta: meta };
-        fetch(API_URL, {
-            method: 'POST', mode: 'no-cors',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        }).then(() => setUi('ok')).catch(() => setUi('err'));
+    function renderSel() {
+        const s = document.getElementById('sel');
+        s.innerHTML = '<option value="c">Minggu Ini (Aktif)</option>';
+        d.h.forEach((h,i) => s.innerHTML += `<option value="${i}">Arsip: ${h.start} - ${h.end}</option>`);
     }
 
-    function setUi(s) {
-        const dot = document.getElementById('sDot');
-        const txt = document.getElementById('sText');
-        dot.className = 's-dot';
-        if(s==='sync') { dot.classList.add('syncing'); txt.innerText="Menyimpan..."; }
-        if(s==='ok') { dot.classList.add('ok'); txt.innerText="Tersimpan"; }
-        if(s==='err') { dot.classList.add('err'); txt.innerText="Offline Mode"; }
-    }
+    function render() {
+        const l=document.getElementById('list'), tb=document.getElementById('pbd');
+        l.innerHTML=''; tb.innerHTML='';
+        const wks = cur().w || [];
+        let tG=0, tP=0, tL=0;
 
-    // CORE LOGIC
-    function saveMeta() { meta.p=document.getElementById('projName').value; meta.v=document.getElementById('vendName').value; save(); }
-    const getData=()=>mode==='cur'?cur:hist[mode];
+        if(wks.length===0) l.innerHTML='<div style="text-align:center;padding:20px;color:#999">Data Kosong</div>';
 
-    function render(){
-        const list=document.getElementById('list'), pBody=document.getElementById('pBody'); list.innerHTML=''; pBody.innerHTML='';
-        const data=getData(); let gt=0, gb=0, go=0;
-        if(!data.w || data.w.length===0) list.innerHTML=`<div style="text-align:center;padding:30px;color:#94a3b8">Data Kosong</div>`;
-        else {
-            data.w.forEach((w,i)=>{
-                let nF=0, nH=0, nO=0, bar='', pC='';
-                if(!w.att)w.att=Array(7).fill({val:0,ot:0});
-                w.att.forEach(d=>{
-                    const v=d.val||0; if(v===1)nF++; else if(v===0.5)nH++; nO+=(d.ot||0);
-                    let cls='bg-0'; if(v===1)cls='bg-1'; if(v===0.5)cls='bg-05'; bar+=`<div class="seg ${cls}"></div>`;
-                    let txt='-'; if(v===1)txt='1'; if(v===0.5)txt='½'; pC+=`<td align="center" class="col-day">${txt}</td>`;
-                });
-                const pb=(nF*w.rate)+(nH*(w.rate*0.5)), po=nO*w.otRate, tot=pb+po; gt+=tot; gb+=pb; go+=po;
-                list.innerHTML+=`<details class="card"><summary class="card-head"><div class="u-info"><h3>${w.name}</h3><span class="u-role">${w.cat}</span></div><div class="u-money">Rp ${fmt(tot)}</div></summary><div class="card-body"><div class="bars">${bar}</div><div style="font-size:0.8rem;color:#64748b;display:flex;justify-content:space-between;margin-bottom:10px;"><span>Hadir: <b>${nF}</b></span><span>½: <b>${nH}</b></span><span>Lembur: <b>${nO} Jam</b></span></div><div class="btn-row"><button class="btn btn-white" onclick="edit(${i})">📝 Edit</button><button class="btn btn-red" onclick="del(${i})">🗑 Hapus</button></div></div></details>`;
-                pBody.innerHTML+=`<tr><td align="center">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td align="right">${fmt(w.rate)}</td><td align="right">${fmt(w.otRate)}</td>${pC}<td align="center">${nF}</td><td align="center">${nH}</td><td align="center">${nO}</td><td class="col-money">Rp ${fmt(pb)}</td><td class="col-money">Rp ${fmt(po)}</td><td class="col-total">Rp ${fmt(tot)}</td></tr>`;
+        wks.forEach((w,i)=>{
+            if(!w.att) w.att = Array(7).fill({val:0,ot:0});
+            let hk=0, ot=0, bar='', cells='';
+            
+            w.att.forEach(a=>{
+                const v=a.val||0; 
+                if(v===1) hk++; else if(v===0.5) hk+=0.5; 
+                ot+=(a.ot||0);
+                bar += `<div class="seg ${v===1?'bg1':v===0.5?'bg05':'bg0'}"></div>`;
+                cells += `<td class="c">${v===1?'v':v===0.5?'½':'-'}</td>`;
             });
-        }
-        document.getElementById('dispTotal').innerText="Rp "+fmt(gt); document.getElementById('sumBasic').innerText="Rp "+fmt(gb); document.getElementById('sumOt').innerText="Rp "+fmt(go); document.getElementById('sumGrand').innerText="Rp "+fmt(gt);
-        document.getElementById('pProj').innerText=meta.p; document.getElementById('pVend').innerText=meta.v; document.getElementById('pStart').innerText=data.start; document.getElementById('pEnd').innerText=data.end;
+
+            const gp = (hk * w.rate) + (hk%1!==0 ? 0 : 0); // Logic fix if needed
+            const payP = (hk * w.rate); // Simplification for half day handled by logic
+            // Half day logic: Rate is daily. So 0.5 * rate is correct.
+            
+            const pay = (hk * w.rate) + (ot * w.otRate);
+            const pp = hk * w.rate; 
+            const pl = ot * w.otRate;
+            tG+=pay; tP+=pp; tL+=pl;
+
+            l.innerHTML += `
+            <details class="c">
+                <summary class="h">
+                    <div class="u-info"><h3>${w.name}</h3><span class="role">${w.cat}</span></div>
+                    <div class="u-money">Rp ${f(pay)}</div>
+                </summary>
+                <div class="c-body">
+                    <div class="bar">${bar}</div>
+                    <div style="font-size:0.8rem; display:flex; justify-content:space-between; margin-bottom:10px">
+                        <span>Hadir: <b>${hk}</b></span><span>Lembur: <b>${ot}h</b></span>
+                    </div>
+                    <div class="btns">
+                        <button class="btn b-w" onclick="edt(${i})">📝 Edit</button>
+                        <button class="btn b-r" onclick="del(${i})">🗑 Hapus</button>
+                    </div>
+                </div>
+            </details>`;
+
+            tb.innerHTML += `<tr><td class="c">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td class="r">${f(w.rate)}</td><td class="r">${f(w.otRate)}</td>${cells}<td class="c">${hk}</td><td class="c">0</td><td class="c">${ot}</td><td class="r">${f(pp)}</td><td class="r">${f(pl)}</td><td class="r" style="font-weight:bold">${f(pay)}</td></tr>`;
+        });
+
+        document.getElementById('dispTot').innerText = "Rp "+f(tG);
+        
+        // Print Totals
+        document.getElementById('tGp').innerText = "Rp "+f(tP);
+        document.getElementById('tGl').innerText = "Rp "+f(tL);
+        document.getElementById('tGt').innerText = "Rp "+f(tG);
+        
+        document.getElementById('pp').innerText = d.m.p;
+        document.getElementById('pv').innerText = d.m.v;
+        document.getElementById('pt').innerText = cur().start + ' s/d ' + cur().end;
     }
 
     // ACTIONS
-    function addWorker(e){e.preventDefault();const w={id:Date.now(),name:document.getElementById('nName').value,cat:document.getElementById('nCat').value,rate:Number(document.getElementById('nRate').value),otRate:Number(document.getElementById('nOt').value),att:Array(7).fill({val:0,ot:0})};getData().w.push(w);save();closeM('mAdd');document.getElementById('nName').value='';}
-    function del(i){if(confirm('Hapus?')){getData().w.splice(i,1);save();}}
+    function addM() { document.getElementById('mA').className='mod on'; }
+    function cls(id) { document.getElementById(id).className='mod'; }
     
-    function edit(i){
-        eIdx=i; const w=getData().w[i]; document.getElementById('eName').innerText=w.name;
-        const c=document.getElementById('eRows'); c.innerHTML='';
-        w.att.forEach((d,x)=>{
-            const v=d.val||0;
-            c.innerHTML+=`<div class="edit-row"><div class="day-n" style="font-weight:bold;width:30px">${days[x]}</div><div class="rad-grp"><label class="rad-btn"><input type="radio" name="d_${x}" value="1" ${v===1?'checked':''}><span></span>Full</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0.5" ${v===0.5?'checked':''}><span></span>½</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0" ${v===0?'checked':''}><span></span>Abs</label></div><input type="number" id="ot_${x}" value="${d.ot||0}" class="inp-ot" placeholder="Jam"></div>`;
+    function add(e) {
+        e.preventDefault();
+        const w = {
+            id: Date.now(),
+            name: document.getElementById('nA').value,
+            cat: document.getElementById('cA').value,
+            rate: Number(document.getElementById('rA').value),
+            otRate: Number(document.getElementById('oA').value),
+            att: Array(7).fill({val:0, ot:0})
+        };
+        cur().w.push(w);
+        saveLoc(); cls('mA');
+        document.getElementById('nA').value='';
+    }
+
+    function edt(i) {
+        idx=i; const w=cur().w[i];
+        document.getElementById('eT').innerText=w.name;
+        const div = document.getElementById('eR'); div.innerHTML='';
+        
+        w.att.forEach((a,x)=>{
+            div.innerHTML += `
+            <div class="row">
+                <div style="width:30px; font-weight:bold">${dys[x]}</div>
+                <div class="chk">
+                    <label><input type="radio" name="d${x}" value="1" ${a.val==1?'checked':''}><span></span>Full</label>
+                    <label><input type="radio" name="d${x}" value="0.5" ${a.val==0.5?'checked':''}><span></span>½</label>
+                    <label><input type="radio" name="d${x}" value="0" ${a.val==0?'checked':''}><span></span>Abs</label>
+                </div>
+                <input type="number" id="o${x}" value="${a.ot}" class="i-ot">
+            </div>`;
         });
-        document.getElementById('mEdit').classList.add('active');
+        document.getElementById('mE').className='mod on';
     }
 
-    // BULK ACTIONS LOGIC
-    function setBulk(val) {
+    // BULK FUNCTIONS
+    function bulkSet(val) {
         for(let x=0; x<7; x++) {
-            const radios = document.getElementsByName(`d_${x}`);
-            for(r of radios) { if(r.value === val) r.checked = true; }
+            const rads = document.getElementsByName(`d${x}`);
+            for(let r of rads) if(Number(r.value) === val) r.checked = true;
         }
     }
-    function setBulkOt() {
-        const jam = prompt("Masukkan jumlah jam lembur untuk semua hari:", "1");
-        if(jam !== null) {
-            for(let x=0; x<7; x++) { document.getElementById(`ot_${x}`).value = jam; }
+    
+    function bulkOt() {
+        const v = prompt("Jam lembur untuk semua hari?", "1");
+        if(v) for(let x=0; x<7; x++) document.getElementById(`o${x}`).value = v;
+    }
+
+    function upd(e) {
+        e.preventDefault();
+        const w = cur().w[idx];
+        for(let x=0; x<7; x++) {
+            const rads = document.getElementsByName(`d${x}`);
+            let v=0; for(let r of rads) if(r.checked) v=Number(r.value);
+            w.att[x].val = v;
+            w.att[x].ot = Number(document.getElementById(`o${x}`).value);
+        }
+        saveLoc(); cls('mE');
+    }
+
+    function del(i) { if(confirm('Hapus?')) { cur().w.splice(i,1); saveLoc(); } }
+
+    function arch() {
+        const c = d.c;
+        if(!c.start || !c.end) return alert('Isi Tanggal Periode dulu');
+        if(confirm('Arsipkan Minggu Ini?')) {
+            d.h.unshift(JSON.parse(JSON.stringify(c))); // Copy current to history
+            d.c.w.forEach(w => w.att = Array(7).fill({val:0,ot:0})); // Reset current
+            d.c.start=''; d.c.end='';
+            renderSel();
+            document.getElementById('sel').value='0'; // Jump to the new archive
+            loadView(); // Load UI
+            sync(); // Save to cloud
         }
     }
 
-    function saveAtt(e){
-        e.preventDefault(); const w=getData().w[eIdx]; const newAtt=[];
-        for(let i=0;i<7;i++){
-            const rads=document.getElementsByName(`d_${i}`); let val=0; for(r of rads)if(r.checked)val=Number(r.value);
-            const ot=Number(document.getElementById(`ot_${i}`).value); newAtt.push({val,ot});
-        }
-        w.att=newAtt; save(); closeM('mEdit');
+    // ANALYTICS
+    function rTrend() {
+        setTimeout(()=>{
+            const l=[], dt=[];
+            for(let i=d.h.length-1; i>=0; i--) {
+                let t=0; d.h[i].w.forEach(w=>{
+                    let h=0,o=0; w.att.forEach(a=>{ if(a.val==1)h++;else if(a.val==0.5)h+=0.5; o+=a.ot; });
+                    t += (h*w.rate)+(o*w.otRate);
+                });
+                l.push(d.h[i].end); dt.push(t);
+            }
+            if(ch1)ch1.destroy();
+            ch1=new Chart(document.getElementById('cTr'),{type:'line',data:{labels:l,datasets:[{label:'Total',data:dt,borderColor:'#2563eb',fill:true,backgroundColor:'#eff6ff'}]}});
+        },100);
     }
 
-    function doArchive(){
-        if(!cur.start||!cur.end)return alert('Isi tanggal dulu!');
-        if(confirm('Arsipkan Minggu Ini?')){
-            hist.unshift(JSON.parse(JSON.stringify(cur)));
-            cur.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
-            cur.start=''; cur.end='';
-            save(); location.reload();
-        }
+    function rAll() {
+        setTimeout(()=>{
+            const m={};
+            const proc = (arr) => arr.forEach(w => {
+                if(!m[w.name]) m[w.name]=0;
+                let h=0,o=0; w.att.forEach(a=>{ if(a.val==1)h++;else if(a.val==0.5)h+=0.5; o+=a.ot; });
+                m[w.name] += (h*w.rate)+(o*w.otRate);
+            });
+            d.h.forEach(h=>proc(h.w)); proc(d.c.w);
+            const s = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+            if(ch2)ch2.destroy();
+            ch2=new Chart(document.getElementById('cAll'),{type:'bar',indexAxis:'y',data:{labels:s.map(x=>x[0]),datasets:[{label:'Total Terima',data:s.map(x=>x[1]),backgroundColor:'#10b981'}]}});
+        },100);
     }
-
-    // UI Helpers
-    function openAddModal(){document.getElementById('mAdd').classList.add('active');}
-    function closeM(id){document.getElementById(id).classList.remove('active');}
-    function loadHistOpt(){const s=document.getElementById('histSel');s.innerHTML='<option value="cur">Minggu Ini (Aktif)</option>';hist.forEach((h,i)=>s.innerHTML+=`<option value="${i}">Arsip: ${h.start} - ${h.end}</option>`);}
-    function loadData(){mode=document.getElementById('histSel').value;const d=getData();document.getElementById('dStart').value=d.start;document.getElementById('dEnd').value=d.end;if(mode!=='cur')mode=Number(mode);render();}
-    function renderTrend(){setTimeout(()=>{const l=[],v=[];for(let i=hist.length-1;i>=0;i--){let t=0;if(hist[i].w)hist[i].w.forEach(w=>{if(w.att)w.att.forEach(d=>{const x=d.val||0;t+=(x===1?w.rate:x===0.5?w.rate*0.5:0)+((d.ot||0)*w.otRate);});});l.push(hist[i].end);v.push(t);}if(chTrend)chTrend.destroy();chTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels:l,datasets:[{label:'Total (Rp)',data:v,borderColor:'#2563eb',fill:true,backgroundColor:'rgba(37,99,235,0.1)'}]},options:{responsive:true,maintainAspectRatio:false}});const tb=document.getElementById('trendTable');tb.innerHTML='';v.slice().reverse().forEach((x,i)=>tb.innerHTML+=`<tr><td style="padding:5px">${l[l.length-1-i]}</td><td align="right">Rp ${fmt(x)}</td></tr>`);},100);}
 
     init();
 </script>
