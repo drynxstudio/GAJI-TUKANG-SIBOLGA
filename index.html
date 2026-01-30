@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll Sync V19</title>
+    <title>Payroll V20 Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -49,7 +49,7 @@
         /* MODAL */
         .mod{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
         .mod.on{display:flex}
-        .box{background:#fff;width:90%;max-width:450px;border-radius:20px;padding:25px;max-height:90vh;overflow-y:auto}
+        .box{background:#fff;width:90%;max-width:450px;border-radius:20px;padding:25px;max-height:85vh;overflow-y:auto}
         .bulk{display:flex;gap:5px;margin-bottom:15px;padding-bottom:15px;border-bottom:1px dashed var(--brd)}
         .bk-btn{flex:1;font-size:0.75rem;padding:8px;background:#f1f5f9;border-radius:20px;text-align:center;cursor:pointer;border:1px solid var(--brd)}
         
@@ -85,7 +85,6 @@
             .l{border-bottom:1px solid #000;margin-top:60px}
         }
         
-        /* LOADER */
         #loader{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
         .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top:4px solid var(--a);border-radius:50%;animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -117,12 +116,13 @@
 <button class="fab" onclick="opA()">+</button>
 
 <div class="anl">
+    <h4 style="margin:0 0 10px 5px; color:#64748b; font-size:0.85rem">LAPORAN</h4>
     <details class="rep"><summary onclick="rTrend()">📈 Trend Keuangan</summary><div style="padding:15px"><canvas id="cT" height="200"></canvas></div></details>
     <details class="rep"><summary onclick="rAll()">📑 Rekap Total</summary><div style="padding:15px"><canvas id="cA" height="200"></canvas></div></details>
     <button class="print-btn" onclick="window.print()">🖨️ Cetak Nota PDF</button>
 </div>
 
-<div id="mA" class="mod"><div class="box"><h3>Tambah Pekerja</h3><form onsubmit="add(event)"><input id="nA" class="ctl" placeholder="Nama" required style="margin-bottom:10px"><select id="cA" class="ctl" style="margin-bottom:10px"><option>Tukang</option><option>Kernet</option><option>Mandor</option></select><div class="grid"><input type="number" id="rA" class="ctl" value="150000"><input type="number" id="oA" class="ctl" value="25000"></div><div class="btns" style="margin-top:20px"><button type="button" class="btn b-w" onclick="cl('mA')">Batal</button><button type="submit" class="btn b-b">Simpan</button></div></form></div></div>
+<div id="mA" class="mod"><div class="box"><h3>Tambah Pekerja</h3><form onsubmit="add(event)"><input id="nA" class="ctl" placeholder="Nama" required style="margin-bottom:10px"><select id="cA" class="ctl" style="margin-bottom:10px"><option value="Tukang">Tukang</option><option value="Kernet">Kernet</option><option value="Mandor">Mandor</option></select><div class="grid"><input type="number" id="rA" class="ctl" value="150000" placeholder="Rp/Hari"><input type="number" id="oA" class="ctl" value="25000" placeholder="Rp/Jam"></div><div class="btns" style="margin-top:20px"><button type="button" class="btn b-w" onclick="cl('mA')">Batal</button><button type="submit" class="btn b-b">Simpan</button></div></form></div></div>
 
 <div id="mE" class="mod">
     <div class="box">
@@ -184,6 +184,10 @@
                 d.m = j.meta || {p:'',v:''};
                 if(!Array.isArray(d.c.w)) d.c.w=[];
                 if(!Array.isArray(d.h)) d.h=[];
+                
+                // AUTO FIX UNDEFINED DATA
+                fixData(d.c.w);
+                d.h.forEach(h => fixData(h.w));
             }
             st('ok','Online');
         }catch(e){console.log(e);st('err','Offline');}
@@ -192,19 +196,27 @@
         renSel(); view();
     }
 
+    function fixData(workers){
+        if(!workers) return;
+        workers.forEach(w => {
+            if(!w.cat || w.cat === 'undefined') w.cat = 'Tukang'; // Default to Tukang if undefined
+            if(!w.att) w.att = Array(7).fill({val:0,ot:0});
+        });
+    }
+
     function st(s,t){
         const d=document.getElementById('dot'), tx=document.getElementById('st');
         d.className='dot '+ (s==='busy'?'load':s==='ok'?'ok':''); tx.innerText=t;
     }
 
     function sync(){
-        st('busy','Saving...');
+        st('busy','Menyimpan...');
         if(tmr) clearTimeout(tmr);
         tmr = setTimeout(async ()=>{
             try{
                 await fetch(API,{method:'POST',mode:'no-cors',body:JSON.stringify({current:d.c,history:d.h,meta:d.m})});
-                st('ok','Saved');
-            }catch(e){st('err','Fail');}
+                st('ok','Tersimpan');
+            }catch(e){st('err','Gagal Sync');}
         },2000);
     }
 
@@ -242,6 +254,9 @@
         if(wks.length===0) l.innerHTML='<div style="text-align:center;padding:30px;color:#999">Data Kosong</div>';
 
         wks.forEach((w,i)=>{
+            // Fix display if undefined
+            const catDisplay = (w.cat && w.cat !== 'undefined') ? w.cat : 'Tukang'; 
+            
             if(!w.att) w.att=Array(7).fill({val:0,ot:0});
             let hk=0, hf=0, ot=0, bar='', cells='';
             
@@ -263,7 +278,7 @@
             l.innerHTML+=`
             <details class="c">
                 <summary class="h">
-                    <div><h3 style="margin:0">${w.name}</h3><span class="role">${w.cat}</span></div>
+                    <div><h3 style="margin:0">${w.name}</h3><span class="role">${catDisplay}</span></div>
                     <div style="font-weight:700;color:var(--a)">Rp ${f(tt)}</div>
                 </summary>
                 <div class="c-body">
@@ -278,7 +293,7 @@
                 </div>
             </details>`;
 
-            pb.innerHTML+=`<tr><td class="tc">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td class="tr">${f(w.rate)}</td><td class="tr">${f(w.otRate)}</td>${cells}<td class="tc">${hk}</td><td class="tc">${hf}</td><td class="tc">${ot}</td><td class="tr">${f(gp)}</td><td class="tr">${f(go)}</td><td class="tr" style="font-weight:bold">${f(tt)}</td></tr>`;
+            pb.innerHTML+=`<tr><td class="tc">${i+1}</td><td>${w.name}</td><td>${catDisplay}</td><td class="tr">${f(w.rate)}</td><td class="tr">${f(w.otRate)}</td>${cells}<td class="tc">${hk}</td><td class="tc">${hf}</td><td class="tc">${ot}</td><td class="tr">${f(gp)}</td><td class="tr">${f(go)}</td><td class="tr" style="font-weight:bold">${f(tt)}</td></tr>`;
         });
 
         document.getElementById('dT').innerText="Rp "+f(tg);
@@ -293,11 +308,22 @@
     // --- ACTIONS ---
     function opA(){ document.getElementById('mA').className='mod on'; }
     function cl(id){ document.getElementById(id).className='mod'; }
+    
     function add(e){
         e.preventDefault();
-        const w={id:Date.now(), name:document.getElementById('nA').value, cat:document.getElementById('cA').value, rate:Number(document.getElementById('rA').value), otRate:Number(document.getElementById('oA').value), att:Array(7).fill({val:0,ot:0})};
+        // Pastikan Value diambil dengan benar
+        const catVal = document.getElementById('cA').value;
+        const w={
+            id:Date.now(), 
+            name:document.getElementById('nA').value, 
+            cat: catVal ? catVal : 'Tukang', // Default fallback
+            rate:Number(document.getElementById('rA').value), 
+            otRate:Number(document.getElementById('oA').value), 
+            att:Array(7).fill({val:0,ot:0})
+        };
         cur().w.push(w); save(); cl('mA'); document.getElementById('nA').value='';
     }
+    
     function del(i){ if(confirm('Hapus?')){ cur().w.splice(i,1); save(); } }
 
     function edt(i){
@@ -323,7 +349,9 @@
     function bulk(v){
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
-            for(let r of rs) if(Number(r.value)===v) r.checked=true;
+            for(let r of rs) {
+                if(parseFloat(r.value) === v) r.checked=true;
+            }
         }
     }
     function bulkOt(){
@@ -336,7 +364,8 @@
         const w=cur().w[idx];
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
-            let v=0; for(let r of rs) if(r.checked) v=Number(r.value);
+            let v=0; 
+            for(let r of rs) if(r.checked) v=parseFloat(r.value);
             w.att[i]={val:v, ot:Number(document.getElementById('o'+i).value)};
         }
         save(); cl('mE');
@@ -364,7 +393,7 @@
                 l.push(d.h[i].end); v.push(t);
             }
             if(ch1)ch1.destroy();
-            ch1=new Chart(document.getElementById('cT'),{type:'line',data:{labels:l,datasets:[{label:'Total',data:v,borderColor:'#3b82f6',fill:true}]}});
+            ch1=new Chart(document.getElementById('cT'),{type:'line',data:{labels:l,datasets:[{label:'Total',data:v,borderColor:'#3b82f6',fill:true,backgroundColor:'#eff6ff'}]}});
         },100);
     }
     function rAll(){
