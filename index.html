@@ -3,32 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll Auto-Sync V15</title>
+    <title>Payroll Cloud V16</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#0f172a; --accent:#2563eb; --bg:#f8fafc; --border:#e2e8f0; --text:#334155; --white:#ffffff; --green:#16a34a; }
+        :root { --primary:#0f172a; --accent:#2563eb; --bg:#f8fafc; --border:#e2e8f0; --text:#334155; --white:#ffffff; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin:0; padding:0; font-family:'Plus Jakarta Sans', sans-serif; background:var(--bg); color:var(--text); padding-bottom:80px; }
 
-        /* HEADER & STATUS */
+        /* LOADING OVERLAY */
+        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .spinner { width:40px; height:40px; border:4px solid #e2e8f0; border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* HEADER */
         .header { background:var(--primary); color:white; padding:15px 20px 20px 20px; border-radius:0 0 24px 24px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
-        
-        .status-pill {
-            position: absolute; top: 15px; right: 20px;
-            background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 20px;
-            font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px;
-            border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(4px); transition: 0.3s;
-        }
-        .s-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; transition: 0.3s; }
-        /* Status Colors */
-        .status-pill.syncing .s-dot { background: #fbbf24; animation: pulse 1s infinite; }
-        .status-pill.saved .s-dot { background: #4ade80; }
-        .status-pill.error .s-dot { background: #f87171; }
-        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        .status-pill { position:absolute; top:15px; right:20px; background:rgba(0,0,0,0.3); padding:4px 10px; border-radius:20px; font-size:0.7rem; font-weight:600; display:flex; align-items:center; gap:5px; border:1px solid rgba(255,255,255,0.1); }
+        .s-dot { width:8px; height:8px; border-radius:50%; background:#ccc; }
+        .s-dot.syncing { background:#fbbf24; animation:pulse 1s infinite; }
+        .s-dot.ok { background:#4ade80; }
+        .s-dot.err { background:#ef4444; }
+        @keyframes pulse { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
 
         .inp-mini { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:white; padding:8px 12px; border-radius:8px; margin-bottom:6px; width:100%; outline:none; font-family:inherit; font-size:0.9rem; }
-        .inp-title { font-weight:700; font-size:1rem; width: 60%; }
+        .inp-title { font-weight:700; font-size:1rem; width:60%; }
         .total-strip { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1); }
         .total-val { font-size:1.1rem; font-weight:700; color:#60a5fa; }
 
@@ -36,8 +34,7 @@
         .controls { padding:0 20px; display:flex; flex-direction:column; gap:10px; margin-bottom:15px; }
         .row-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .ctrl-el { padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--white); width:100%; outline:none; font-size:0.85rem; }
-        .arch-badge { background:#fff7ed; color:#c2410c; padding:10px; border-radius:8px; font-size:0.8rem; text-align:center; border:1px solid #ffedd5; font-weight:600; }
-
+        
         /* LIST */
         .list-wrap { padding:0 20px; display:flex; flex-direction:column; gap:10px; }
         details.card { background:var(--white); border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.03); overflow:hidden; }
@@ -59,17 +56,23 @@
         .btn-red { background:#fee2e2; color:#ef4444; }
         .btn-blue { background:var(--accent); color:white; }
 
-        /* ANALYTICS (CLEAN) */
+        /* ANALYTICS */
         .analytics-section { padding:20px; margin-top:20px; border-top:1px dashed var(--border); display:flex; flex-direction:column; gap:12px; }
         details.report-box { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
         details.report-box summary { padding:12px 15px; background:#f1f5f9; font-weight:600; font-size:0.9rem; cursor:pointer; list-style:none; display:flex; justify-content:space-between; }
         .report-content { padding:15px; }
         .print-btn-block { background:var(--primary); color:white; width:100%; padding:15px; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; margin-top:10px; display:flex; justify-content:center; gap:10px;}
 
-        /* MODAL & FAB */
+        /* MODAL */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
         .modal.active { display:flex; }
         .m-box { background:white; width:90%; max-width:450px; border-radius:20px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.2); }
+        
+        /* BULK ACTIONS */
+        .bulk-actions { display:flex; gap:5px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #e2e8f0; }
+        .btn-bulk { font-size:0.75rem; padding:6px 10px; border-radius:15px; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; flex:1; text-align:center; }
+        .btn-bulk:hover { background:#e2e8f0; }
+
         .edit-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:0.85rem; }
         .rad-grp { display:flex; gap:5px; }
         .rad-btn { padding:4px 10px; background:#f1f5f9; border-radius:15px; cursor:pointer; display:flex; align-items:center; gap:4px; }
@@ -78,11 +81,11 @@
         .inp-ot { width:40px; padding:5px; border:1px solid var(--border); border-radius:6px; text-align:center; }
         .fab { position:fixed; bottom:20px; right:20px; width:50px; height:50px; background:var(--accent); color:white; border-radius:50%; border:none; font-size:24px; box-shadow:0 8px 20px rgba(37,99,235,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:99; }
 
-        /* PRINT NOTA (V12 Style) */
+        /* PRINT */
         #printArea { display:none; }
         @media print {
             body { background:white; padding:0; }
-            .header, .controls, .list-wrap, .fab, .modal, .analytics-section { display:none !important; }
+            .header, .controls, .list-wrap, .fab, .modal, .analytics-section, #loader { display:none !important; }
             #printArea { display:block; position:absolute; top:0; left:0; width:100%; padding:15px; box-sizing:border-box; }
             .p-head { text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:15px; }
             .p-title { font-size:16px; font-weight:bold; text-transform:uppercase; }
@@ -106,11 +109,15 @@
 </head>
 <body>
 
-<div class="header">
-    <div id="statusBadge" class="status-pill">
-        <div class="s-dot"></div> <span id="sText">Cloud Ready</span>
-    </div>
+<div id="loader">
+    <div class="spinner"></div>
+    <p style="margin-top:15px; font-weight:600; color:#64748b;">Sinkronisasi Data...</p>
+</div>
 
+<div class="header">
+    <div class="status-pill">
+        <div class="s-dot" id="sDot"></div> <span id="sText">Menghubungkan...</span>
+    </div>
     <div style="margin-bottom:10px;">
         <input type="text" id="projName" class="inp-mini inp-title" placeholder="Nama Proyek" onchange="saveMeta()">
         <input type="text" id="vendName" class="inp-mini" placeholder="Nama Vendor" onchange="saveMeta()">
@@ -132,7 +139,6 @@
         <input type="date" id="dStart" class="ctrl-el" onchange="save()">
         <input type="date" id="dEnd" class="ctrl-el" onchange="save()">
     </div>
-    <div id="archMsg" class="arch-badge" style="display:none;">⚠️ Mode Arsip</div>
 </div>
 
 <div id="list" class="list-wrap"></div>
@@ -140,35 +146,37 @@
 
 <div class="analytics-section">
     <h4 style="margin:0 0 5px 5px; color:#64748b; font-size:0.8rem; text-transform:uppercase;">Laporan & Rekapitulasi</h4>
-
     <details class="report-box">
         <summary onclick="renderTrend()">📈 Trend Keuangan Mingguan</summary>
         <div class="report-content">
             <div style="height:200px"><canvas id="chartTrend"></canvas></div>
-            <table style="width:100%; font-size:0.85rem; margin-top:15px; border-collapse:collapse;">
-                <tbody id="trendTable"></tbody>
-            </table>
+            <table style="width:100%; font-size:0.85rem; margin-top:15px; border-collapse:collapse;"><tbody id="trendTable"></tbody></table>
         </div>
     </details>
-
-    <details class="report-box">
-        <summary onclick="renderAllStats()">📑 Rekap Total Pekerja</summary>
-        <div class="report-content">
-            <div style="height:200px"><canvas id="chartAll"></canvas></div>
-            <table style="width:100%; font-size:0.85rem; margin-top:15px; border-collapse:collapse;">
-                <thead><tr style="border-bottom:1px solid #eee"><th align="left">Nama</th><th align="right">Total (Rp)</th></tr></thead>
-                <tbody id="allTable"></tbody>
-            </table>
-        </div>
-    </details>
-
-    <button class="print-btn-block" onclick="window.print()">
-        🖨️ Cetak Nota (PDF)
-    </button>
+    <button class="print-btn-block" onclick="window.print()">🖨️ Cetak Nota (PDF)</button>
 </div>
 
 <div id="mAdd" class="modal"><div class="m-box"><h3 style="margin-top:0">Tambah Pekerja</h3><form onsubmit="addWorker(event)"><input type="text" id="nName" class="ctrl-el" placeholder="Nama Lengkap" required style="margin-bottom:10px;"><select id="nCat" class="ctrl-el" style="margin-bottom:10px;"><option value="Tukang">Tukang</option><option value="Kernet">Kernet</option><option value="Mandor">Mandor</option></select><div class="row-grid"><input type="number" id="nRate" class="ctrl-el" placeholder="Harian" value="150000"><input type="number" id="nOt" class="ctrl-el" placeholder="Lembur" value="25000"></div><div class="btn-row" style="margin-top:20px;"><button type="button" class="btn btn-white" onclick="closeM('mAdd')">Batal</button><button type="submit" class="btn btn-blue">Simpan</button></div></form></div></div>
-<div id="mEdit" class="modal"><div class="m-box"><h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Edit Absen: <span id="eName" style="color:var(--accent)"></span></h3><form onsubmit="saveAtt(event)"><div id="eRows"></div><div class="btn-row" style="margin-top:15px;"><button type="button" class="btn btn-white" onclick="closeM('mEdit')">Batal</button><button type="submit" class="btn btn-blue">Update</button></div></form></div></div>
+
+<div id="mEdit" class="modal">
+    <div class="m-box">
+        <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Edit Absen: <span id="eName" style="color:var(--accent)"></span></h3>
+        
+        <div class="bulk-actions">
+            <div class="btn-bulk" onclick="setBulk('1')">✅ Semua Hadir</div>
+            <div class="btn-bulk" onclick="setBulk('0.5')">½ Semua 1/2</div>
+            <div class="btn-bulk" onclick="setBulkOt()">🕒 Semua Lembur</div>
+        </div>
+
+        <form onsubmit="saveAtt(event)">
+            <div id="eRows"></div>
+            <div class="btn-row" style="margin-top:15px;">
+                <button type="button" class="btn btn-white" onclick="closeM('mEdit')">Batal</button>
+                <button type="submit" class="btn btn-blue">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div id="printArea">
     <div class="p-head">
@@ -178,12 +186,8 @@
     </div>
     <table class="p-table">
         <thead>
-            <tr>
-                <th rowspan="2" width="3%">No</th><th rowspan="2">Nama Pekerja</th><th rowspan="2" width="10%">Jabatan</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekapitulasi</th><th colspan="2">Rincian</th><th rowspan="2" class="th-total">TOTAL DITERIMA</th>
-            </tr>
-            <tr>
-                <th>Harian</th><th>Jam</th><th class="col-day">S</th><th class="col-day">S</th><th class="col-day">R</th><th class="col-day">K</th><th class="col-day">J</th><th class="col-day">S</th><th class="col-day">M</th><th width="4%">HK</th><th width="4%">½</th><th width="4%">Jam</th><th>Pokok</th><th>Lembur</th>
-            </tr>
+            <tr><th rowspan="2" width="3%">No</th><th rowspan="2">Nama Pekerja</th><th rowspan="2" width="10%">Jabatan</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekapitulasi</th><th colspan="2">Rincian</th><th rowspan="2" class="th-total">TOTAL DITERIMA</th></tr>
+            <tr><th>Harian</th><th>Jam</th><th class="col-day">S</th><th class="col-day">S</th><th class="col-day">R</th><th class="col-day">K</th><th class="col-day">J</th><th class="col-day">S</th><th class="col-day">M</th><th width="4%">HK</th><th width="4%">½</th><th width="4%">Jam</th><th>Pokok</th><th>Lembur</th></tr>
         </thead>
         <tbody id="pBody"></tbody>
     </table>
@@ -202,77 +206,93 @@
 
 <script>
     // =========================================================
-    // URL GOOGLE SCRIPT ANDA
+    // PASTE URL SCRIPT ANDA DISINI (YANG V16/UPDATE)
     // =========================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec"; 
     // =========================================================
 
     const days=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-    let cur=JSON.parse(localStorage.getItem('v15_cur'))||{start:'',end:'',w:[]};
-    let hist=JSON.parse(localStorage.getItem('v15_hist'))||[];
-    let meta=JSON.parse(localStorage.getItem('v15_meta'))||{p:'',v:''};
-    let mode='cur'; let eIdx=-1; let chTrend, chAll; let syncTimer=null;
-
+    let cur={start:'',end:'',w:[]}; let hist=[]; let meta={p:'',v:''};
+    let mode='cur'; let eIdx=-1; let chTrend; let syncTimer=null;
     const fmt=n=>new Intl.NumberFormat('id-ID').format(n);
 
-    function init(){ 
-        repairData(); 
-        document.getElementById('projName').value=meta.p; 
-        document.getElementById('vendName').value=meta.v; 
+    // INIT
+    async function init() {
+        if(!API_URL || API_URL.includes("PASTE")) {
+            document.getElementById('loader').style.display='none';
+            alert("Harap Edit Code dan Masukkan URL Google Script!");
+            return;
+        }
+        
+        try {
+            // FETCH FROM CLOUD (GET)
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            
+            if(data) {
+                if(data.current) cur = data.current;
+                if(data.history) hist = data.history;
+                if(data.meta) meta = data.meta;
+            }
+            
+            setUi('ok');
+        } catch (e) {
+            console.error(e);
+            setUi('err');
+            // Fallback to local if offline
+            const lc = JSON.parse(localStorage.getItem('v16_data'));
+            if(lc) { cur=lc.cur; hist=lc.hist; meta=lc.meta; }
+        }
+        
+        document.getElementById('loader').style.display='none';
+        document.getElementById('projName').value = meta.p;
+        document.getElementById('vendName').value = meta.v;
         loadHistOpt(); loadData();
-        setUiStatus('idle');
     }
 
-    function repairData(){ if(!cur||typeof cur!=='object')cur={start:'',end:'',w:[]}; if(!Array.isArray(cur.w))cur.w=[]; if(!Array.isArray(hist))hist=[]; hist.forEach(h=>{if(!h.w)h.w=[]}); }
-
-    // --- CORE SAVE & SYNC ---
-    function saveMeta(){ meta.p=document.getElementById('projName').value; meta.v=document.getElementById('vendName').value; localStorage.setItem('v15_meta',JSON.stringify(meta)); queueSync(); }
-    
-    function save(){ 
-        const d=getData(); d.start=document.getElementById('dStart').value; d.end=document.getElementById('dEnd').value;
-        if(mode==='cur')localStorage.setItem('v15_cur',JSON.stringify(d)); else{hist[mode]=d;localStorage.setItem('v15_hist',JSON.stringify(hist));loadHistOpt();}
-        render(); queueSync();
-    }
-
-    function queueSync() {
-        if(!GOOGLE_SCRIPT_URL) return;
-        setUiStatus('syncing'); // Show yellow immediately
+    // SYNC TO CLOUD (POST)
+    function save() {
+        // Save Local First
+        const d = getData();
+        d.start = document.getElementById('dStart').value;
+        d.end = document.getElementById('dEnd').value;
+        if(mode!=='cur'){ hist[mode]=d; }
+        
+        localStorage.setItem('v16_data', JSON.stringify({cur, hist, meta}));
+        render();
+        
+        // Debounce Cloud Sync
+        setUi('sync');
         if(syncTimer) clearTimeout(syncTimer);
-        syncTimer = setTimeout(performSync, 2000); // 2 sec debounce
+        syncTimer = setTimeout(pushToCloud, 2000);
     }
 
-    function performSync() {
+    function pushToCloud() {
         const payload = { current: cur, history: hist, meta: meta };
-        
-        fetch(GOOGLE_SCRIPT_URL, {
+        fetch(API_URL, {
             method: 'POST', mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
-        }).then(() => {
-            setUiStatus('saved');
-        }).catch(err => {
-            console.error(err); setUiStatus('error');
-        });
+        }).then(() => setUi('ok')).catch(() => setUi('err'));
     }
 
-    function setUiStatus(s) {
-        const p = document.getElementById('statusBadge');
-        const d = p.querySelector('.s-dot');
-        const t = document.getElementById('sText');
-        p.className = 'status-pill ' + s;
-        
-        if(s==='idle') { t.innerText = "Live Ready"; }
-        else if(s==='syncing') { t.innerText = "Menyimpan..."; }
-        else if(s==='saved') { t.innerText = "Tersimpan"; setTimeout(()=>setUiStatus('idle'), 3000); }
-        else if(s==='error') { t.innerText = "Gagal Sync"; }
+    function setUi(s) {
+        const dot = document.getElementById('sDot');
+        const txt = document.getElementById('sText');
+        dot.className = 's-dot';
+        if(s==='sync') { dot.classList.add('syncing'); txt.innerText="Menyimpan..."; }
+        if(s==='ok') { dot.classList.add('ok'); txt.innerText="Tersimpan"; }
+        if(s==='err') { dot.classList.add('err'); txt.innerText="Offline Mode"; }
     }
 
+    // CORE LOGIC
+    function saveMeta() { meta.p=document.getElementById('projName').value; meta.v=document.getElementById('vendName').value; save(); }
     const getData=()=>mode==='cur'?cur:hist[mode];
 
     function render(){
         const list=document.getElementById('list'), pBody=document.getElementById('pBody'); list.innerHTML=''; pBody.innerHTML='';
         const data=getData(); let gt=0, gb=0, go=0;
-        if(data.w.length===0) list.innerHTML=`<div style="text-align:center;padding:30px;color:#94a3b8">Belum ada data.</div>`;
+        if(!data.w || data.w.length===0) list.innerHTML=`<div style="text-align:center;padding:30px;color:#94a3b8">Data Kosong</div>`;
         else {
             data.w.forEach((w,i)=>{
                 let nF=0, nH=0, nO=0, bar='', pC='';
@@ -287,26 +307,63 @@
                 pBody.innerHTML+=`<tr><td align="center">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td align="right">${fmt(w.rate)}</td><td align="right">${fmt(w.otRate)}</td>${pC}<td align="center">${nF}</td><td align="center">${nH}</td><td align="center">${nO}</td><td class="col-money">Rp ${fmt(pb)}</td><td class="col-money">Rp ${fmt(po)}</td><td class="col-total">Rp ${fmt(tot)}</td></tr>`;
             });
         }
-        document.getElementById('dispTotal').innerText="Rp "+fmt(gt); 
-        // Print Totals
-        document.getElementById('sumBasic').innerText="Rp "+fmt(gb); document.getElementById('sumOt').innerText="Rp "+fmt(go); document.getElementById('sumGrand').innerText="Rp "+fmt(gt);
+        document.getElementById('dispTotal').innerText="Rp "+fmt(gt); document.getElementById('sumBasic').innerText="Rp "+fmt(gb); document.getElementById('sumOt').innerText="Rp "+fmt(go); document.getElementById('sumGrand').innerText="Rp "+fmt(gt);
         document.getElementById('pProj').innerText=meta.p; document.getElementById('pVend').innerText=meta.v; document.getElementById('pStart').innerText=data.start; document.getElementById('pEnd').innerText=data.end;
     }
 
+    // ACTIONS
+    function addWorker(e){e.preventDefault();const w={id:Date.now(),name:document.getElementById('nName').value,cat:document.getElementById('nCat').value,rate:Number(document.getElementById('nRate').value),otRate:Number(document.getElementById('nOt').value),att:Array(7).fill({val:0,ot:0})};getData().w.push(w);save();closeM('mAdd');document.getElementById('nName').value='';}
+    function del(i){if(confirm('Hapus?')){getData().w.splice(i,1);save();}}
+    
+    function edit(i){
+        eIdx=i; const w=getData().w[i]; document.getElementById('eName').innerText=w.name;
+        const c=document.getElementById('eRows'); c.innerHTML='';
+        w.att.forEach((d,x)=>{
+            const v=d.val||0;
+            c.innerHTML+=`<div class="edit-row"><div class="day-n" style="font-weight:bold;width:30px">${days[x]}</div><div class="rad-grp"><label class="rad-btn"><input type="radio" name="d_${x}" value="1" ${v===1?'checked':''}><span></span>Full</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0.5" ${v===0.5?'checked':''}><span></span>½</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0" ${v===0?'checked':''}><span></span>Abs</label></div><input type="number" id="ot_${x}" value="${d.ot||0}" class="inp-ot" placeholder="Jam"></div>`;
+        });
+        document.getElementById('mEdit').classList.add('active');
+    }
+
+    // BULK ACTIONS LOGIC
+    function setBulk(val) {
+        for(let x=0; x<7; x++) {
+            const radios = document.getElementsByName(`d_${x}`);
+            for(r of radios) { if(r.value === val) r.checked = true; }
+        }
+    }
+    function setBulkOt() {
+        const jam = prompt("Masukkan jumlah jam lembur untuk semua hari:", "1");
+        if(jam !== null) {
+            for(let x=0; x<7; x++) { document.getElementById(`ot_${x}`).value = jam; }
+        }
+    }
+
+    function saveAtt(e){
+        e.preventDefault(); const w=getData().w[eIdx]; const newAtt=[];
+        for(let i=0;i<7;i++){
+            const rads=document.getElementsByName(`d_${i}`); let val=0; for(r of rads)if(r.checked)val=Number(r.value);
+            const ot=Number(document.getElementById(`ot_${i}`).value); newAtt.push({val,ot});
+        }
+        w.att=newAtt; save(); closeM('mEdit');
+    }
+
+    function doArchive(){
+        if(!cur.start||!cur.end)return alert('Isi tanggal dulu!');
+        if(confirm('Arsipkan Minggu Ini?')){
+            hist.unshift(JSON.parse(JSON.stringify(cur)));
+            cur.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
+            cur.start=''; cur.end='';
+            save(); location.reload();
+        }
+    }
+
+    // UI Helpers
     function openAddModal(){document.getElementById('mAdd').classList.add('active');}
     function closeM(id){document.getElementById(id).classList.remove('active');}
-    function addWorker(e){try{e.preventDefault();const w={id:Date.now(),name:document.getElementById('nName').value,cat:document.getElementById('nCat').value,rate:Number(document.getElementById('nRate').value),otRate:Number(document.getElementById('nOt').value),att:Array(7).fill({val:0,ot:0})};getData().w.push(w);save();closeM('mAdd');document.getElementById('nName').value='';}catch(x){alert(x.message);repairData();}}
-    function edit(i){eIdx=i;const w=getData().w[i];document.getElementById('eName').innerText=w.name;const c=document.getElementById('eRows');c.innerHTML='';if(!w.att)w.att=Array(7).fill({val:0,ot:0});w.att.forEach((d,x)=>{const v=d.val||0;c.innerHTML+=`<div class="edit-row"><div class="day-n" style="font-weight:bold;width:30px">${days[x]}</div><div class="rad-grp"><label class="rad-btn"><input type="radio" name="d_${x}" value="1" ${v===1?'checked':''}><span></span>Full</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0.5" ${v===0.5?'checked':''}><span></span>½</label><label class="rad-btn"><input type="radio" name="d_${x}" value="0" ${v===0?'checked':''}><span></span>Abs</label></div><input type="number" id="ot_${x}" value="${d.ot||0}" class="inp-ot" placeholder="Jam"></div>`;});document.getElementById('mEdit').classList.add('active');}
-    function saveAtt(e){e.preventDefault();const w=getData().w[eIdx];const newAtt=[];for(let i=0;i<7;i++){const rads=document.getElementsByName(`d_${i}`);let val=0;for(r of rads)if(r.checked)val=Number(r.value);const ot=Number(document.getElementById(`ot_${i}`).value);newAtt.push({val,ot});}w.att=newAtt;save();closeM('mEdit');}
-    function del(i){if(confirm('Hapus?')){getData().w.splice(i,1);save();}}
-    function doArchive(){if(!cur.start||!cur.end)return alert('Isi tanggal dulu!');if(confirm('Arsipkan Minggu Ini?')){hist.unshift(JSON.parse(JSON.stringify(cur)));localStorage.setItem('v15_hist',JSON.stringify(hist));cur.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));cur.start='';cur.end='';localStorage.setItem('v15_cur',JSON.stringify(cur));location.reload();}}
-    
-    function renderTrend(){setTimeout(()=>{const l=[],v=[];for(let i=hist.length-1;i>=0;i--){let t=0;if(hist[i].w)hist[i].w.forEach(w=>{if(w.att)w.att.forEach(d=>{const x=d.val||0;t+=(x===1?w.rate:x===0.5?w.rate*0.5:0)+((d.ot||0)*w.otRate);});});l.push(hist[i].end);v.push(t);}if(chTrend)chTrend.destroy();chTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels:l,datasets:[{label:'Total (Rp)',data:v,borderColor:'#2563eb',fill:true,backgroundColor:'rgba(37,99,235,0.1)'}]},options:{responsive:true,maintainAspectRatio:false}});const tb=document.getElementById('trendTable');tb.innerHTML='';v.slice().reverse().forEach((x,i)=>tb.innerHTML+=`<tr><td style="padding:5px">${l[l.length-1-i]}</td><td align="right">Rp ${fmt(x)}</td></tr>`);},100);}
-    function renderAllStats(){setTimeout(()=>{const m={};const r=(wk)=>{if(wk.w)wk.w.forEach(w=>{if(!m[w.name])m[w.name]=0;if(w.att)w.att.forEach(d=>{const x=d.val||0;m[w.name]+=(x===1?w.rate:x===0.5?w.rate*0.5:0)+((d.ot||0)*w.otRate);});});};hist.forEach(r);r(cur);const l=Object.keys(m).map(k=>({n:k,t:m[k]})).sort((a,b)=>b.t-a.t);const tb=document.getElementById('allTable');tb.innerHTML='';l.forEach(i=>tb.innerHTML+=`<tr><td style="padding:5px">${i.n}</td><td align="right">Rp ${fmt(i.t)}</td></tr>`);if(chAll)chAll.destroy();chAll=new Chart(document.getElementById('chartAll'),{type:'bar',indexAxis:'y',data:{labels:l.map(i=>i.n),datasets:[{label:'Total (Rp)',data:l.map(i=>i.t),backgroundColor:'#10b981'}]},options:{responsive:true,maintainAspectRatio:false}});},100);}
-
     function loadHistOpt(){const s=document.getElementById('histSel');s.innerHTML='<option value="cur">Minggu Ini (Aktif)</option>';hist.forEach((h,i)=>s.innerHTML+=`<option value="${i}">Arsip: ${h.start} - ${h.end}</option>`);}
-    function loadData(){mode=document.getElementById('histSel').value;const d=getData();document.getElementById('dStart').value=d.start;document.getElementById('dEnd').value=d.end;const isArc=mode!=='cur';document.getElementById('archMsg').style.display=isArc?'block':'none';document.getElementById('btnArch').style.display=isArc?'none':'block';if(isArc)mode=Number(mode);render();}
-    function closeM(id){document.getElementById(id).classList.remove('active');}
+    function loadData(){mode=document.getElementById('histSel').value;const d=getData();document.getElementById('dStart').value=d.start;document.getElementById('dEnd').value=d.end;if(mode!=='cur')mode=Number(mode);render();}
+    function renderTrend(){setTimeout(()=>{const l=[],v=[];for(let i=hist.length-1;i>=0;i--){let t=0;if(hist[i].w)hist[i].w.forEach(w=>{if(w.att)w.att.forEach(d=>{const x=d.val||0;t+=(x===1?w.rate:x===0.5?w.rate*0.5:0)+((d.ot||0)*w.otRate);});});l.push(hist[i].end);v.push(t);}if(chTrend)chTrend.destroy();chTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels:l,datasets:[{label:'Total (Rp)',data:v,borderColor:'#2563eb',fill:true,backgroundColor:'rgba(37,99,235,0.1)'}]},options:{responsive:true,maintainAspectRatio:false}});const tb=document.getElementById('trendTable');tb.innerHTML='';v.slice().reverse().forEach((x,i)=>tb.innerHTML+=`<tr><td style="padding:5px">${l[l.length-1-i]}</td><td align="right">Rp ${fmt(x)}</td></tr>`);},100);}
 
     init();
 </script>
