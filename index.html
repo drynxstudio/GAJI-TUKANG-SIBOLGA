@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll V22 Fix Kategori</title>
+    <title>Payroll Pro V23</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* CSS Clean & Modern */
-        :root{--p:#1e293b;--a:#3b82f6;--bg:#f1f5f9;--card:#fff;--brd:#e2e8f0;--txt:#334155;}
+        /* --- UI APLIKASI (MOBILE) --- */
+        :root{--p:#1e293b;--a:#2563eb;--bg:#f1f5f9;--card:#fff;--brd:#e2e8f0;--txt:#334155;}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);padding-bottom:120px}
         
-        /* HEADER */
+        /* HEADER & STATUS */
         .head{background:var(--p);color:#fff;padding:20px;border-radius:0 0 24px 24px;box-shadow:0 4px 15px rgba(0,0,0,0.1);position:relative}
         .status{position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.3);padding:5px 12px;border-radius:20px;font-size:0.75rem;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,0.2)}
         .dot{width:8px;height:8px;border-radius:50%;background:#ccc}
@@ -20,10 +20,9 @@
         .dot.busy{background:#facc15;animation:pulse 1s infinite}
         @keyframes pulse { 50% { opacity:0.5; } }
 
-        .inp-glass{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 15px;border-radius:8px;width:100%;outline:none;font-family:inherit;margin-bottom:8px}
-        .inp-lg{font-weight:700;font-size:1.1rem}
+        .inp-t{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px;border-radius:8px;width:100%;margin-bottom:10px;outline:none;font-weight:600}
         .tot-box{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center}
-        .tv{font-size:1.3rem;font-weight:800;color:#93c5fd}
+        .tot-v{font-size:1.3rem;font-weight:800;color:#93c5fd}
 
         /* CONTROLS */
         .box{padding:20px;display:flex;flex-direction:column;gap:10px}
@@ -31,20 +30,18 @@
         .ctl{padding:12px;border:1px solid var(--brd);border-radius:10px;width:100%;background:#fff;outline:none;font-size:0.9rem}
         .arch-msg{background:#fff7ed;color:#c2410c;padding:12px;border-radius:10px;text-align:center;font-weight:600;border:1px solid #ffedd5;display:none}
 
-        /* LIST */
+        /* LIST CARD */
         .list{padding:0 20px;display:flex;flex-direction:column;gap:12px}
         details.c{background:#fff;border:1px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.03)}
         details.c[open]{border-color:var(--a);box-shadow:0 5px 15px rgba(37,99,235,0.1)}
         summary.h{padding:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
         summary.h::-webkit-details-marker{display:none}
         .role{font-size:0.7rem;font-weight:700;background:#f1f5f9;padding:2px 8px;border-radius:4px;color:#64748b;text-transform:uppercase;margin-top:4px;display:inline-block}
-        .role-Kernet{background:#fef3c7;color:#b45309} /* Warna khusus Kernet */
+        .role-Kernet{background:#fef3c7;color:#b45309}
         .c-body{padding:15px;background:#f8fafc;border-top:1px solid var(--brd)}
-        
         .bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:#e2e8f0;margin-bottom:12px}
         .seg{flex:1;border-right:1px solid #fff}
         .bg1{background:#10b981} .bg05{background:#8b5cf6} .bg0{background:transparent}
-
         .btns{display:flex;gap:10px;margin-top:15px}
         .btn{flex:1;padding:12px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:flex;justify-content:center;align-items:center}
         .bw{background:#fff;border:1px solid var(--brd);color:var(--txt)}
@@ -54,52 +51,66 @@
         /* MODAL */
         .mod{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
         .mod.on{display:flex}
-        .mbox{background:#fff;width:90%;max-width:450px;border-radius:20px;padding:25px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,0.2)}
+        .mbox{background:#fff;width:90%;max-width:450px;border-radius:20px;padding:25px;max-height:85vh;overflow-y:auto}
         
-        /* EDIT */
         .erow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9}
         .rgrp{display:flex;gap:5px}
         .rbtn{padding:6px 12px;background:#f1f5f9;border-radius:20px;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:5px}
         .rbtn input{display:none} .rbtn span{width:10px;height:10px;border-radius:50%;border:2px solid #ccc}
         .rbtn input:checked+span{background:var(--a);border-color:var(--a)}
         .iot{width:45px;padding:6px;border:1px solid var(--brd);border-radius:6px;text-align:center}
-
         .bulk{display:flex;gap:5px;margin-bottom:15px;padding-bottom:15px;border-bottom:1px dashed var(--brd)}
         .bk{flex:1;font-size:0.75rem;padding:8px;background:#f8fafc;border:1px solid var(--brd);border-radius:15px;text-align:center;cursor:pointer}
+        .edit-info{background:#f0f9ff;border:1px solid #bae6fd;padding:10px;border-radius:10px;margin-bottom:15px}
+        .l-sm{font-size:0.75rem;color:#64748b;font-weight:700;display:block}
 
-        .edit-info-box{background:#f0f9ff;border:1px solid #bae6fd;padding:10px;border-radius:10px;margin-bottom:15px}
-        .label-sm{font-size:0.75rem;color:#64748b;font-weight:700;margin-bottom:3px;display:block}
-
-        /* FAB */
         .fab{position:fixed;bottom:25px;right:25px;width:60px;height:60px;background:var(--a);color:#fff;border-radius:50%;font-size:30px;border:none;box-shadow:0 10px 25px rgba(37,99,235,0.4);display:flex;justify-content:center;align-items:center;cursor:pointer;z-index:800}
         
-        /* ANALYTICS */
         .anl{padding:20px;margin-top:20px;border-top:1px dashed var(--brd)}
         details.rep{background:#fff;border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;overflow:hidden}
         details.rep summary{padding:15px;background:#f8fafc;font-weight:600;cursor:pointer;list-style:none}
-        .full-btn{width:100%;padding:15px;background:var(--p);color:#fff;font-weight:700;border-radius:12px;border:none;margin-top:10px;cursor:pointer}
+        .full-btn{width:100%;padding:15px;background:var(--p);color:#fff;font-weight:700;border-radius:12px;border:none;margin-top:10px;cursor:pointer;font-size:1rem;}
         .reset-btn{width:100%;padding:15px;background:#ef4444;color:#fff;font-weight:700;border-radius:12px;border:none;margin-top:30px;cursor:pointer}
 
-        /* PRINT */
-        #print{display:none}
-        @media print{
-            body{background:#fff}
-            .head,.box,.list,.fab,.mod,.anl,#loader{display:none!important}
-            #print{display:block;position:absolute;top:0;left:0;width:100%;padding:20px}
-            table{width:100%;border-collapse:collapse;font-size:10px;font-family:sans-serif;margin-bottom:20px}
-            th,td{border:1px solid #000;padding:5px}
-            th{background:#eee!important;-webkit-print-color-adjust:exact;text-align:center}
-            .tr{text-align:right} .tc{text-align:center}
-            .tot-t{width:50%;margin-left:auto;border:2px solid #000}
-            .gt{background:#ddd!important;-webkit-print-color-adjust:exact;font-weight:bold}
-            .sign{display:flex;justify-content:space-around;margin-top:50px}
-            .sign div{width:30%;text-align:center}
-            .ln{border-bottom:1px solid #000;margin-top:60px}
-        }
-        
         #loader{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
         .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top:4px solid var(--a);border-radius:50%;animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* --- TAMPILAN NOTA (PROFESIONAL) --- */
+        #print{display:none}
+        @media print{
+            body{background:#fff;font-family:'Times New Roman',serif}
+            .head,.box,.list,.fab,.mod,.anl,#loader{display:none!important}
+            #print{display:block;position:absolute;top:0;left:0;width:100%;padding:10mm;box-sizing:border-box}
+            
+            /* Header Nota */
+            .p-title{text-align:center;font-size:18pt;font-weight:bold;text-decoration:underline;margin-bottom:20px;text-transform:uppercase}
+            .p-info{display:flex;justify-content:space-between;margin-bottom:20px;font-family:Arial,sans-serif;font-size:10pt}
+            .p-info table{width:auto;border:none}
+            .p-info td{border:none;padding:2px 10px 2px 0}
+            
+            /* Main Table */
+            .p-tbl{width:100%;border-collapse:collapse;font-size:9pt;font-family:Arial,sans-serif}
+            .p-tbl th{background:#e0e0e0 !important;border:1px solid #000;padding:6px;text-align:center;font-weight:bold;-webkit-print-color-adjust:exact}
+            .p-tbl td{border:1px solid #000;padding:4px 6px}
+            
+            /* Columns */
+            .col-nm{text-align:left}
+            .col-c{text-align:center}
+            .col-r{text-align:right}
+            
+            /* Summary Box */
+            .sum-box{margin-top:20px;display:flex;justify-content:flex-end}
+            .sum-tbl{width:40%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt}
+            .sum-tbl td{padding:5px;border:1px solid #000}
+            .sum-bg{background:#f0f0f0;font-weight:bold;-webkit-print-color-adjust:exact}
+            .sum-tot{background:#333;color:#fff;font-weight:bold;padding:8px !important;-webkit-print-color-adjust:exact}
+            
+            /* Signatures */
+            .sign-area{display:flex;justify-content:space-between;margin-top:50px;font-family:Arial,sans-serif;font-size:10pt}
+            .sign-box{width:30%;text-align:center}
+            .sign-line{border-bottom:1px solid #000;margin-top:70px;margin-bottom:5px}
+        }
     </style>
 </head>
 <body>
@@ -109,8 +120,8 @@
 <div class="head">
     <div class="status"><div class="dot" id="dot"></div><span id="st">Init...</span></div>
     <div style="margin-bottom:10px">
-        <input id="pN" class="inp-glass inp-lg" placeholder="Nama Proyek" onchange="upMeta()">
-        <input id="vN" class="inp-glass" placeholder="Nama Vendor" onchange="upMeta()">
+        <input id="pN" class="inp-t" style="font-weight:700;font-size:1.1rem" placeholder="Nama Proyek" onchange="upMeta()">
+        <input id="vN" class="inp-t" placeholder="Nama Vendor" onchange="upMeta()">
     </div>
     <div class="tot-box"><span>TOTAL MINGGU INI</span><div class="tv" id="dT">Rp 0</div></div>
 </div>
@@ -130,7 +141,7 @@
 <div class="anl">
     <details class="rep"><summary onclick="rTrend()">📈 Trend Keuangan</summary><div style="padding:15px"><canvas id="cT" height="200"></canvas></div></details>
     <details class="rep"><summary onclick="rAll()">📑 Rekap Total</summary><div style="padding:15px"><canvas id="cA" height="200"></canvas></div></details>
-    <button class="full-btn" onclick="window.print()">🖨️ Cetak Nota PDF</button>
+    <button class="full-btn" onclick="window.print()">🖨️ Cetak Nota Resmi</button>
     <button class="reset-btn" onclick="hardReset()">⚠️ RESET SYSTEM</button>
 </div>
 
@@ -156,55 +167,75 @@
 
 <div id="mE" class="mod"><div class="mbox">
     <h3 style="margin-top:0">Edit Data</h3>
-    
-    <div class="edit-info-box">
-        <label class="label-sm">Nama</label>
-        <input type="text" id="eName" class="ctl" style="margin-bottom:5px; padding:8px;">
+    <div class="edit-info">
+        <label class="l-sm">Nama</label><input type="text" id="eName" class="ctl" style="margin-bottom:5px;padding:8px">
         <div class="grid">
-            <div>
-                <label class="label-sm">Jabatan</label>
-                <select id="eCat" class="ctl" style="padding:8px;">
-                    <option value="Tukang">Tukang</option>
-                    <option value="Kernet">Kernet</option>
-                    <option value="Mandor">Mandor</option>
-                </select>
-            </div>
-            <div>
-                <label class="label-sm">Gaji/Hari</label>
-                <input type="number" id="eRate" class="ctl" style="padding:8px;">
-            </div>
+            <div><label class="l-sm">Jabatan</label><select id="eCat" class="ctl" style="padding:8px"><option value="Tukang">Tukang</option><option value="Kernet">Kernet</option><option value="Mandor">Mandor</option></select></div>
+            <div><label class="l-sm">Gaji/Hari</label><input type="number" id="eRate" class="ctl" style="padding:8px"></div>
         </div>
     </div>
-
-    <div class="bulk">
-        <div class="bk" onclick="bulk(1)">✅ Full Semua</div>
-        <div class="bk" onclick="bulk(0.5)">½ Setengah</div>
-        <div class="bk" onclick="bulkOt()">🕒 Lembur</div>
-    </div>
-    
-    <form onsubmit="upd(event)">
-        <div id="eR"></div>
-        <div class="btns">
-            <button type="button" class="btn bw" onclick="cl('mE')">Batal</button>
-            <button type="submit" class="btn bb">Update</button>
-        </div>
-    </form>
+    <div class="bulk"><div class="bk" onclick="bulk(1)">✅ Full</div><div class="bk" onclick="bulk(0.5)">½ Setengah</div><div class="bk" onclick="bulkOt()">🕒 Lembur</div></div>
+    <form onsubmit="upd(event)"><div id="eR"></div><div class="btns"><button type="button" class="btn bw" onclick="cl('mE')">Batal</button><button type="submit" class="btn bb">Update</button></div></form>
 </div></div>
 
 <div id="print">
-    <div style="text-align:center;border-bottom:3px double #000;padding-bottom:10px;margin-bottom:15px">
-        <h2 style="margin:0">NOTA PEMBAYARAN UPAH</h2>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:5px"><span>Proyek: <b id="pp"></b> | Vendor: <b id="pv"></b></span><span>Periode: <b id="pt"></b></span></div>
+    <div class="p-title">NOTA PEMBAYARAN UPAH</div>
+    
+    <div class="p-info">
+        <table>
+            <tr><td><b>Proyek</b></td><td>: <span id="pp"></span></td></tr>
+            <tr><td><b>Vendor/Mandor</b></td><td>: <span id="pv"></span></td></tr>
+        </table>
+        <table>
+            <tr><td><b>Periode</b></td><td>: <span id="pt"></span></td></tr>
+            <tr><td><b>Cetak</b></td><td>: <span id="pdt"></span></td></tr>
+        </table>
     </div>
-    <table>
+
+    <table class="p-tbl">
         <thead>
-            <tr><th rowspan="2">No</th><th rowspan="2">Nama</th><th rowspan="2">Jab</th><th colspan="2">Tarif</th><th colspan="7">Absensi</th><th colspan="3">Rekap</th><th colspan="2">Bayar (Rp)</th><th rowspan="2">TOTAL</th></tr>
-            <tr><th>Hr</th><th>Jm</th><th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th><th>M</th><th>HK</th><th>½</th><th>J</th><th>Pokok</th><th>Lembur</th></tr>
+            <tr>
+                <th rowspan="2" width="5%">No</th>
+                <th rowspan="2">Nama Pekerja</th>
+                <th rowspan="2" width="10%">Jabatan</th>
+                <th colspan="2">Tarif Dasar</th>
+                <th colspan="7">Absensi (Hari)</th>
+                <th colspan="3">Rekapitulasi</th>
+                <th colspan="2">Rincian (Rp)</th>
+                <th rowspan="2" width="15%">TOTAL (Rp)</th>
+            </tr>
+            <tr>
+                <th>Harian</th><th>Jam</th>
+                <th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th><th>M</th>
+                <th>HK</th><th>½</th><th>Jam</th>
+                <th>Upah Pokok</th><th>Lembur</th>
+            </tr>
         </thead>
         <tbody id="pb"></tbody>
     </table>
-    <div style="display:flex;justify-content:flex-end"><table class="tot-t"><tr><td>Gaji Pokok</td><td class="tr" id="pgp"></td></tr><tr><td>Lembur</td><td class="tr" id="pgl"></td></tr><tr class="gt"><td>TOTAL TAGIHAN</td><td class="tr" id="pgt"></td></tr></table></div>
-    <div class="sign"><div>Disetujui,<div style="font-size:10px;font-weight:bold">Site Manager</div><div class="ln"></div>( ................. )</div><div>Dibuat,<div style="font-size:10px;font-weight:bold">Mandor</div><div class="ln"></div>( ................. )</div></div>
+
+    <div class="sum-box">
+        <table class="sum-tbl">
+            <tr><td class="sum-bg">Total Gaji Pokok</td><td class="col-r" id="pgp"></td></tr>
+            <tr><td class="sum-bg">Total Lembur</td><td class="col-r" id="pgl"></td></tr>
+            <tr><td class="sum-tot">TOTAL TAGIHAN</td><td class="sum-tot col-r" id="pgt"></td></tr>
+        </table>
+    </div>
+
+    <div class="sign-area">
+        <div class="sign-box">
+            <div>Disetujui Oleh,</div>
+            <div style="font-weight:bold;margin-top:5px">Site Manager</div>
+            <div class="sign-line"></div>
+            <div>( ..................................... )</div>
+        </div>
+        <div class="sign-box">
+            <div>Dibuat Oleh,</div>
+            <div style="font-weight:bold;margin-top:5px">Mandor / Admin</div>
+            <div class="sign-line"></div>
+            <div>( ..................................... )</div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -221,7 +252,7 @@
 
     // --- SYSTEM INIT ---
     async function init(){
-        if(API.includes("PASTE")) return alert("Masukkan URL Script!");
+        if(API.includes("PASTE")) return alert("URL Script Belum Diisi!");
         try{
             const r = await fetch(API);
             const j = await r.json();
@@ -234,7 +265,7 @@
             st('ok','Online');
         }catch(e){
             console.log(e); st('err','Offline');
-            const loc = localStorage.getItem('v21_data');
+            const loc = localStorage.getItem('v22_data');
             if(loc) d = JSON.parse(loc);
         }
         document.getElementById('loader').style.display='none';
@@ -244,7 +275,6 @@
     function sanitize(wks){
         if(!Array.isArray(wks)) return;
         wks.forEach(w => {
-            // FIX: Pastikan kategori ada isinya
             if(!w.cat || w.cat=='undefined' || w.cat.trim()=='') w.cat='Tukang';
             if(!w.att) w.att=Array(7).fill({val:0,ot:0});
         });
@@ -252,7 +282,7 @@
 
     function hardReset(){
         if(confirm("Yakin hapus semua data error dan ambil ulang dari cloud?")){
-            localStorage.removeItem('v21_data');
+            localStorage.removeItem('v22_data');
             location.reload();
         }
     }
@@ -266,7 +296,7 @@
         st('busy','Sync...');
         if(tmr) clearTimeout(tmr);
         tmr = setTimeout(async ()=>{
-            localStorage.setItem('v21_data', JSON.stringify(d)); 
+            localStorage.setItem('v22_data', JSON.stringify(d)); 
             try{
                 await fetch(API,{method:'POST',mode:'no-cors',body:JSON.stringify({current:d.c,history:d.h,meta:d.m})});
                 st('ok','Saved');
@@ -308,8 +338,7 @@
         if(wks.length===0) l.innerHTML='<div style="text-align:center;padding:30px;color:#999">Data Kosong. Klik +</div>';
 
         wks.forEach((w,i)=>{
-            const catClass = `role-${w.cat}`; // Untuk styling khusus
-            
+            const catClass = `role-${w.cat}`;
             if(!w.att) w.att=Array(7).fill({val:0,ot:0});
             let hk=0, hf=0, ot=0, bar='', cells='';
             
@@ -317,10 +346,9 @@
                 const v=a.val||0;
                 if(v===1)hk++; else if(v===0.5)hf++;
                 ot+=(a.ot||0);
-                
                 let c='bg0'; if(v===1)c='bg1'; if(v===0.5)c='bg05';
                 bar+=`<div class="seg ${c}"></div>`;
-                cells+=`<td class="tc">${v===1?'1':v===0.5?'½':'-'}</td>`;
+                cells+=`<td class="col-c">${v===1?'1':v===0.5?'½':'-'}</td>`;
             });
 
             const gp = (hk*w.rate) + (hf*w.rate*0.5);
@@ -346,7 +374,7 @@
                 </div>
             </details>`;
 
-            pb.innerHTML+=`<tr><td class="tc">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td class="tr">${f(w.rate)}</td><td class="tr">${f(w.otRate)}</td>${cells}<td class="tc">${hk}</td><td class="tc">${hf}</td><td class="tc">${ot}</td><td class="tr">${f(gp)}</td><td class="tr">${f(go)}</td><td class="tr" style="font-weight:bold">${f(tt)}</td></tr>`;
+            pb.innerHTML+=`<tr><td class="col-c">${i+1}</td><td class="col-nm">${w.name}</td><td class="col-c">${w.cat}</td><td class="col-r">${f(w.rate)}</td><td class="col-r">${f(w.otRate)}</td>${cells}<td class="col-c">${hk}</td><td class="col-c">${hf}</td><td class="col-c">${ot}</td><td class="col-r">${f(gp)}</td><td class="col-r">${f(go)}</td><td class="col-r" style="font-weight:bold">${f(tt)}</td></tr>`;
         });
 
         document.getElementById('dT').innerText="Rp "+f(tg);
@@ -356,6 +384,7 @@
         document.getElementById('pp').innerText=d.m.p;
         document.getElementById('pv').innerText=d.m.v;
         document.getElementById('pt').innerText=cur().start+' s/d '+cur().end;
+        document.getElementById('pdt').innerText=new Date().toLocaleDateString('id-ID');
     }
 
     // --- ACTIONS ---
@@ -368,7 +397,7 @@
         const w={
             id:Date.now(), 
             name:document.getElementById('nA').value, 
-            cat: catVal, // Fix Capture Value
+            cat: catVal, 
             rate:Number(document.getElementById('rA').value), 
             otRate:Number(document.getElementById('oA').value), 
             att:Array(7).fill({val:0,ot:0})
@@ -380,8 +409,6 @@
 
     function edt(i){
         idx=i; const w=cur().w[i];
-        
-        // Isi Form Edit Info
         document.getElementById('eName').value = w.name;
         document.getElementById('eCat').value = w.cat || 'Tukang';
         document.getElementById('eRate').value = w.rate;
@@ -389,20 +416,19 @@
         const c=document.getElementById('eR'); c.innerHTML='';
         w.att.forEach((a,x)=>{
             c.innerHTML+=`
-            <div class="row">
+            <div class="erow">
                 <div style="font-weight:bold;width:30px">${dys[x]}</div>
-                <div class="rads">
-                    <label class="rd"><input type="radio" name="d${x}" value="1" ${a.val==1?'checked':''}><span></span>Full</label>
-                    <label class="rd"><input type="radio" name="d${x}" value="0.5" ${a.val==0.5?'checked':''}><span></span>½</label>
-                    <label class="rd"><input type="radio" name="d${x}" value="0" ${a.val==0?'checked':''}><span></span>Abs</label>
+                <div class="rgrp">
+                    <label class="rbtn"><input type="radio" name="d${x}" value="1" ${a.val==1?'checked':''}><span></span>Full</label>
+                    <label class="rbtn"><input type="radio" name="d${x}" value="0.5" ${a.val==0.5?'checked':''}><span></span>½</label>
+                    <label class="rbtn"><input type="radio" name="d${x}" value="0" ${a.val==0?'checked':''}><span></span>Abs</label>
                 </div>
-                <input type="number" id="o${x}" value="${a.ot}" class="iot">
+                <input type="number" id="o${x}" value="${a.ot}" class="iot" placeholder="Jam">
             </div>`;
         });
         document.getElementById('mE').className='mod on';
     }
 
-    // BULK FIX
     function bulk(v){
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
@@ -417,13 +443,10 @@
     function upd(e){
         e.preventDefault();
         const w=cur().w[idx];
-        
-        // Simpan Data Info Baru
         w.name = document.getElementById('eName').value;
         w.cat = document.getElementById('eCat').value;
         w.rate = Number(document.getElementById('eRate').value);
 
-        // Simpan Absen
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
             let v=0; for(let r of rs) if(r.checked) v=parseFloat(r.value);
@@ -433,11 +456,12 @@
     }
 
     function arch(){
-        if(!d.c.start || !d.c.end) return alert('Isi Tanggal dulu');
-        if(confirm('Arsipkan?')){
-            d.h.unshift(JSON.parse(JSON.stringify(d.c)));
-            d.c.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
-            d.c.start=''; d.c.end='';
+        const c = d.c;
+        if(!c.start || !c.end) return alert('Isi Tanggal dulu');
+        if(confirm('Arsipkan Minggu Ini?')){
+            d.h.unshift(JSON.parse(JSON.stringify(c)));
+            c.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
+            c.start=''; c.end='';
             renSel(); view(); sync();
         }
     }
