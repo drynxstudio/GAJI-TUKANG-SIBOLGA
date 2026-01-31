@@ -3,151 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Payroll V20 Fix</title>
+    <title>Payroll V21 Clean</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* CSS Clean & Modern */
-        :root{--p:#1e293b;--a:#3b82f6;--bg:#f8fafc;--card:#fff;--brd:#e2e8f0;--txt:#334155;}
-        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);padding-bottom:100px}
-        
+        /* BASE */
+        :root { --p:#1e293b; --a:#2563eb; --bg:#f1f5f9; --card:#fff; --brd:#e2e8f0; --txt:#334155; }
+        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { margin:0; padding:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--txt); padding-bottom:120px; }
+
         /* HEADER */
-        .head{background:var(--p);color:#fff;padding:20px;border-radius:0 0 24px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
-        .inp-t{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px;border-radius:8px;width:100%;margin-bottom:10px;outline:none;font-weight:600}
-        .status-badge{position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.4);padding:5px 10px;border-radius:20px;font-size:0.7rem;display:flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,0.2)}
-        .dot{width:8px;height:8px;border-radius:50%;background:#ccc}
-        .dot.ok{background:#4ade80;box-shadow:0 0 5px #4ade80}
-        .dot.load{background:#facc15;animation:pulse 1s infinite}
-        @keyframes pulse{50%{opacity:0.5}}
-        .tot-box{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center}
-        .tot-v{font-size:1.3rem;font-weight:800;color:#93c5fd}
+        .head { background:var(--p); color:#fff; padding:20px; border-radius:0 0 24px 24px; box-shadow:0 4px 15px rgba(0,0,0,0.1); position:relative; }
+        .status { position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.3); padding:5px 12px; border-radius:20px; font-size:0.75rem; display:flex; align-items:center; gap:6px; border:1px solid rgba(255,255,255,0.2); }
+        .dot { width:8px; height:8px; border-radius:50%; background:#ccc; }
+        .dot.ok { background:#4ade80; box-shadow:0 0 5px #4ade80; }
+        .dot.busy { background:#fbbf24; animation:pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity:0.5; } }
+
+        .inp-glass { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:10px 15px; border-radius:8px; width:100%; outline:none; font-family:inherit; margin-bottom:8px; }
+        .inp-lg { font-weight:700; font-size:1.1rem; }
+        .total-strip { margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; }
+        .tv { font-size:1.3rem; font-weight:800; color:#93c5fd; }
 
         /* CONTROLS */
-        .ctl-wrap{padding:20px;display:flex;flex-direction:column;gap:10px}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .ctl{padding:12px;border:1px solid var(--brd);border-radius:10px;width:100%;background:#fff;outline:none}
-        .arch-msg{background:#fff7ed;color:#c2410c;padding:10px;border-radius:8px;text-align:center;font-size:0.85rem;font-weight:600;display:none}
+        .box { padding:20px; display:flex; flex-direction:column; gap:10px; }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .ctl { padding:12px; border:1px solid var(--brd); border-radius:10px; width:100%; background:#fff; outline:none; font-size:0.9rem; }
+        .arch-msg { background:#fff7ed; color:#c2410c; padding:12px; border-radius:10px; text-align:center; font-weight:600; border:1px solid #ffedd5; display:none; }
 
         /* LIST */
-        .list{padding:0 20px;display:flex;flex-direction:column;gap:12px}
-        details.c{background:#fff;border:1px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.03)}
-        details.c[open]{border-color:var(--a)}
-        summary.h{padding:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
-        summary.h::-webkit-details-marker{display:none}
-        .role{font-size:0.7rem;text-transform:uppercase;background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;color:#64748b}
-        .bar{display:flex;height:6px;background:#e2e8f0;border-radius:3px;margin:10px 0}
-        .seg{flex:1;border-right:1px solid #fff}
-        .bg1{background:#10b981} .bg05{background:#8b5cf6} .bg0{background:transparent}
-        .c-body{padding:15px;background:#f8fafc;border-top:1px solid var(--brd)}
-        .btns{display:flex;gap:10px;margin-top:15px}
-        .btn{flex:1;padding:12px;border-radius:8px;border:none;font-weight:600;cursor:pointer}
-        .b-w{background:#fff;border:1px solid var(--brd)}
-        .b-b{background:var(--a);color:#fff}
-        .b-r{background:#fee2e2;color:#ef4444}
+        .list { padding:0 20px; display:flex; flex-direction:column; gap:12px; }
+        details.c { background:#fff; border:1px solid var(--brd); border-radius:12px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.03); }
+        details.c[open] { border-color:var(--a); box-shadow:0 5px 15px rgba(37,99,235,0.1); }
+        summary.h { padding:15px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+        summary.h::-webkit-details-marker { display:none; }
+        .role { font-size:0.7rem; font-weight:700; background:#f1f5f9; padding:2px 8px; border-radius:4px; color:#64748b; text-transform:uppercase; margin-top:4px; display:inline-block; }
+        .c-body { padding:15px; background:#f8fafc; border-top:1px solid var(--brd); }
+        
+        .bar { display:flex; height:8px; border-radius:4px; overflow:hidden; background:#e2e8f0; margin-bottom:12px; }
+        .seg { flex:1; border-right:1px solid #fff; }
+        .bg1 { background:#10b981; } .bg05 { background:#8b5cf6; } .bg0 { background:transparent; }
+
+        .act { display:flex; gap:10px; margin-top:15px; }
+        .btn { flex:1; padding:12px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:flex; justify-content:center; align-items:center; }
+        .bw { background:#fff; border:1px solid var(--brd); color:var(--txt); }
+        .bb { background:var(--a); color:#fff; }
+        .br { background:#fee2e2; color:#ef4444; }
 
         /* MODAL */
-        .mod{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-        .mod.on{display:flex}
-        .box{background:#fff;width:90%;max-width:450px;border-radius:20px;padding:25px;max-height:85vh;overflow-y:auto}
-        .bulk{display:flex;gap:5px;margin-bottom:15px;padding-bottom:15px;border-bottom:1px dashed var(--brd)}
-        .bk-btn{flex:1;font-size:0.75rem;padding:8px;background:#f1f5f9;border-radius:20px;text-align:center;cursor:pointer;border:1px solid var(--brd)}
+        .mod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+        .mod.on { display:flex; }
+        .mbox { background:#fff; width:90%; max-width:450px; border-radius:20px; padding:25px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.2); }
         
-        .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9}
-        .rads{display:flex;gap:5px}
-        .rd{padding:5px 10px;background:#f1f5f9;border-radius:15px;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:5px}
-        .rd input{display:none} .rd span{width:10px;height:10px;border-radius:50%;border:2px solid #ccc}
-        .rd input:checked+span{background:var(--a);border-color:var(--a)}
-        .iot{width:40px;padding:5px;border:1px solid var(--brd);border-radius:5px;text-align:center}
+        /* EDIT */
+        .erow { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+        .rgrp { display:flex; gap:5px; }
+        .rbtn { padding:6px 12px; background:#f1f5f9; border-radius:20px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; gap:5px; }
+        .rbtn input { display:none; } .rbtn span { width:10px; height:10px; border-radius:50%; border:2px solid #ccc; }
+        .rbtn input:checked+span { background:var(--a); border-color:var(--a); }
+        .iot { width:45px; padding:6px; border:1px solid var(--brd); border-radius:6px; text-align:center; }
 
-        .fab{position:fixed;bottom:25px;right:25px;width:60px;height:60px;background:var(--a);color:#fff;border-radius:50%;font-size:30px;display:flex;justify-content:center;align-items:center;box-shadow:0 10px 25px rgba(37,99,235,0.4);border:none;cursor:pointer}
-        
+        .bulk { display:flex; gap:5px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed var(--brd); }
+        .bk { flex:1; font-size:0.75rem; padding:8px; background:#f8fafc; border:1px solid var(--brd); border-radius:15px; text-align:center; cursor:pointer; }
+
+        /* FAB */
+        .fab { position:fixed; bottom:25px; right:25px; width:60px; height:60px; background:var(--a); color:#fff; border-radius:50%; font-size:30px; border:none; box-shadow:0 10px 25px rgba(37,99,235,0.4); display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:800; }
+
         /* ANALYTICS */
-        .anl{padding:20px;margin-top:20px;border-top:1px dashed var(--brd)}
-        details.rep{background:#fff;border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;overflow:hidden}
-        details.rep summary{padding:15px;background:#f8fafc;font-weight:600;cursor:pointer;list-style:none}
-        .print-btn{width:100%;padding:15px;background:var(--p);color:#fff;font-weight:700;border-radius:12px;border:none;margin-top:15px}
+        .anl { padding:20px; margin-top:20px; border-top:1px dashed var(--brd); }
+        details.rep { background:#fff; border:1px solid var(--brd); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+        details.rep summary { padding:15px; background:#f8fafc; font-weight:600; cursor:pointer; list-style:none; }
+        .full-btn { width:100%; padding:15px; background:var(--p); color:#fff; font-weight:700; border-radius:12px; border:none; margin-top:10px; cursor:pointer; }
+        .reset-btn { width:100%; padding:15px; background:#ef4444; color:#fff; font-weight:700; border-radius:12px; border:none; margin-top:30px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; }
 
         /* PRINT */
-        #print{display:none}
-        @media print{
-            body{background:#fff}
-            .head,.ctl-wrap,.list,.fab,.mod,.anl,#loader{display:none!important}
-            #print{display:block;position:absolute;top:0;left:0;width:100%;padding:20px}
-            table{width:100%;border-collapse:collapse;font-size:10px;font-family:sans-serif;margin-bottom:20px}
-            th,td{border:1px solid #000;padding:5px}
-            th{background:#eee!important;-webkit-print-color-adjust:exact;text-align:center}
-            .tr{text-align:right} .tc{text-align:center}
-            .tot-t{width:50%;margin-left:auto;border:2px solid #000}
-            .g-tr{background:#ddd!important;-webkit-print-color-adjust:exact}
-            .sign{display:flex;justify-content:space-around;margin-top:50px}
-            .sign div{width:30%;text-align:center}
-            .l{border-bottom:1px solid #000;margin-top:60px}
+        #print { display:none; }
+        @media print {
+            body { background:#fff; }
+            .head, .box, .list, .fab, .mod, .anl, #loader { display:none !important; }
+            #print { display:block; position:absolute; top:0; left:0; width:100%; padding:20px; }
+            table { width:100%; border-collapse:collapse; font-size:10px; font-family:sans-serif; margin-bottom:20px; }
+            th, td { border:1px solid #000; padding:5px; }
+            th { background:#eee !important; -webkit-print-color-adjust:exact; text-align:center; }
+            .tr { text-align:right; } .tc { text-align:center; }
+            .tot-t { width:50%; margin-left:auto; border:2px solid #000; }
+            .gt { background:#ddd !important; -webkit-print-color-adjust:exact; font-weight:bold; }
+            .sign { display:flex; justify-content:space-around; margin-top:50px; }
+            .sign div { text-align:center; width:30%; }
+            .ln { border-bottom:1px solid #000; margin-top:60px; }
         }
-        
-        #loader{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
-        .spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top:4px solid var(--a);border-radius:50%;animation:spin 1s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
+
+        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .spin { width:40px; height:40px; border:4px solid #e2e8f0; border-top:4px solid var(--a); border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="loader"><div class="spin"></div><p style="margin-top:15px;font-weight:600;color:#64748b">Sinkronisasi Database...</p></div>
+<div id="loader"><div class="spin"></div><p style="margin-top:15px;color:#64748b;font-weight:600">Reset & Sinkronisasi...</p></div>
 
 <div class="head">
-    <div class="status-badge"><div class="dot" id="dot"></div><span id="st">Init...</span></div>
+    <div class="status"><div class="dot" id="dot"></div><span id="st">Init...</span></div>
     <div style="margin-bottom:10px">
-        <input id="pN" class="inp-t" style="font-weight:700;font-size:1.1rem" placeholder="Nama Proyek" onchange="upMeta()">
-        <input id="vN" class="inp-t" placeholder="Nama Vendor" onchange="upMeta()">
+        <input id="pN" class="inp-glass inp-lg" placeholder="Nama Proyek" onchange="upMeta()">
+        <input id="vN" class="inp-glass" placeholder="Nama Vendor" onchange="upMeta()">
     </div>
-    <div class="tot-box"><span>TOTAL MINGGU INI</span><div class="tot-v" id="dT">Rp 0</div></div>
+    <div class="tot-box"><span>TOTAL MINGGU INI</span><div class="tv" id="dT">Rp 0</div></div>
 </div>
 
-<div class="ctl-wrap">
+<div class="box">
     <div class="grid">
         <select id="sel" class="ctl" onchange="loadView()"><option value="c">Minggu Ini (Aktif)</option></select>
         <button onclick="arch()" class="ctl" style="background:var(--p);color:#fff;font-weight:bold">Arsipkan</button>
     </div>
     <div class="grid"><input type="date" id="dS" class="ctl" onchange="save()"><input type="date" id="dE" class="ctl" onchange="save()"></div>
-    <div id="amsg" class="arch-msg">⚠️ MODE ARSIP (Edit Only)</div>
+    <div id="amsg" class="arch-msg">⚠️ MODE ARSIP (History)</div>
 </div>
 
 <div id="list" class="list"></div>
 <button class="fab" onclick="opA()">+</button>
 
 <div class="anl">
-    <h4 style="margin:0 0 10px 5px; color:#64748b; font-size:0.85rem">LAPORAN</h4>
     <details class="rep"><summary onclick="rTrend()">📈 Trend Keuangan</summary><div style="padding:15px"><canvas id="cT" height="200"></canvas></div></details>
     <details class="rep"><summary onclick="rAll()">📑 Rekap Total</summary><div style="padding:15px"><canvas id="cA" height="200"></canvas></div></details>
-    <button class="print-btn" onclick="window.print()">🖨️ Cetak Nota PDF</button>
+    <button class="full-btn" onclick="window.print()">🖨️ Cetak Nota PDF</button>
+    
+    <button class="reset-btn" onclick="hardReset()">⚠️ RESET SYSTEM & RELOAD</button>
+    <p style="text-align:center;font-size:0.7rem;color:#94a3b8;margin-top:5px">Tekan jika data error/macet</p>
 </div>
 
-<div id="mA" class="mod"><div class="box"><h3>Tambah Pekerja</h3><form onsubmit="add(event)"><input id="nA" class="ctl" placeholder="Nama" required style="margin-bottom:10px"><select id="cA" class="ctl" style="margin-bottom:10px"><option value="Tukang">Tukang</option><option value="Kernet">Kernet</option><option value="Mandor">Mandor</option></select><div class="grid"><input type="number" id="rA" class="ctl" value="150000" placeholder="Rp/Hari"><input type="number" id="oA" class="ctl" value="25000" placeholder="Rp/Jam"></div><div class="btns" style="margin-top:20px"><button type="button" class="btn b-w" onclick="cl('mA')">Batal</button><button type="submit" class="btn b-b">Simpan</button></div></form></div></div>
+<div id="mA" class="mod"><div class="mbox"><h3>Tambah Pekerja</h3><form onsubmit="add(event)"><input id="nA" class="ctl" placeholder="Nama" required style="margin-bottom:10px"><select id="cA" class="ctl" style="margin-bottom:10px"><option>Tukang</option><option>Kernet</option><option>Mandor</option></select><div class="grid"><input type="number" id="rA" class="ctl" value="150000"><input type="number" id="oA" class="ctl" value="25000"></div><div class="act" style="margin-top:20px"><button type="button" class="btn bw" onclick="cl('mA')">Batal</button><button type="submit" class="btn bb">Simpan</button></div></form></div></div>
 
-<div id="mE" class="mod">
-    <div class="box">
-        <h3 style="margin-top:0">Edit: <span id="eN" style="color:var(--a)"></span></h3>
-        <div class="bulk">
-            <div class="bk-btn" onclick="bulk(1)">✅ Full Semua</div>
-            <div class="bk-btn" onclick="bulk(0.5)">½ Setengah Semua</div>
-            <div class="bk-btn" onclick="bulkOt()">🕒 Lembur Semua</div>
-        </div>
-        <form onsubmit="upd(event)">
-            <div id="eR"></div>
-            <div class="btns" style="margin-top:20px">
-                <button type="button" class="btn b-w" onclick="cl('mE')">Batal</button>
-                <button type="submit" class="btn b-b">Update</button>
-            </div>
-        </form>
-    </div>
-</div>
+<div id="mE" class="mod"><div class="mbox"><h3 style="margin-top:0">Edit: <span id="eN" style="color:var(--a)"></span></h3><div class="bulk"><div class="bk" onclick="bulk(1)">✅ Full Semua</div><div class="bk" onclick="bulk(0.5)">½ Setengah</div><div class="bk" onclick="bulkOt()">🕒 Lembur</div></div><form onsubmit="upd(event)"><div id="eR"></div><div class="act" style="margin-top:20px"><button type="button" class="btn bw" onclick="cl('mE')">Batal</button><button type="submit" class="btn bb">Update</button></div></form></div></div>
 
 <div id="print">
     <div style="text-align:center;border-bottom:3px double #000;padding-bottom:10px;margin-bottom:15px">
         <h2 style="margin:0">NOTA PEMBAYARAN UPAH</h2>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:5px">
-            <span>Proyek: <b id="pp"></b> | Vendor: <b id="pv"></b></span><span>Periode: <b id="pt"></b></span>
-        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:5px"><span>Proyek: <b id="pp"></b> | Vendor: <b id="pv"></b></span><span>Periode: <b id="pt"></b></span></div>
     </div>
     <table>
         <thead>
@@ -156,13 +148,13 @@
         </thead>
         <tbody id="pb"></tbody>
     </table>
-    <div style="display:flex;justify-content:flex-end"><table class="tot-t"><tr><td>Gaji Pokok</td><td class="tr" id="pgp"></td></tr><tr><td>Lembur</td><td class="tr" id="pgl"></td></tr><tr class="g-tr"><td>TOTAL TAGIHAN</td><td class="tr" id="pgt"></td></tr></table></div>
-    <div class="sign"><div>Disetujui,<div style="font-size:10px;font-weight:bold">Site Manager</div><div class="l"></div>( ................. )</div><div>Dibuat,<div style="font-size:10px;font-weight:bold">Mandor</div><div class="l"></div>( ................. )</div></div>
+    <div style="display:flex;justify-content:flex-end"><table class="tot-t"><tr><td>Gaji Pokok</td><td class="tr" id="pgp"></td></tr><tr><td>Lembur</td><td class="tr" id="pgl"></td></tr><tr class="gt"><td>TOTAL TAGIHAN</td><td class="tr" id="pgt"></td></tr></table></div>
+    <div class="sign"><div>Disetujui,<div style="font-size:10px;font-weight:bold">Site Manager</div><div class="ln"></div>( ................. )</div><div>Dibuat,<div style="font-size:10px;font-weight:bold">Mandor</div><div class="ln"></div>( ................. )</div></div>
 </div>
 
 <script>
     // ==========================================
-    // PASTE URL SCRIPT ANDA DISINI
+    // PASTE URL SCRIPT ANDA DISINI (V21)
     // ==========================================
     const API = "https://script.google.com/macros/s/AKfycbyWrfr0Ji917MlPksOZxWYXigMJlI0IoIGX__pLCj8VUbNcu7ClH7bgxdN6YKkYzbj3HA/exec";
     // ==========================================
@@ -172,36 +164,44 @@
     let idx=-1; let tmr; let ch1,ch2;
     const f=n=>new Intl.NumberFormat('id-ID').format(n);
 
-    // --- SYSTEM ---
+    // --- SYSTEM INIT ---
     async function init(){
-        if(API.includes("PASTE")) return alert("URL Script Belum Diisi!");
+        if(API.includes("PASTE")) return alert("Masukkan URL Script!");
         try{
-            const r=await fetch(API);
-            const j=await r.json();
-            if(j){
+            const r = await fetch(API);
+            const j = await r.json();
+            if(j && j.current){
+                // FORCE SANITIZE DATA
                 d.c = j.current || {w:[],start:'',end:''};
                 d.h = j.history || [];
                 d.m = j.meta || {p:'',v:''};
-                if(!Array.isArray(d.c.w)) d.c.w=[];
-                if(!Array.isArray(d.h)) d.h=[];
-                
-                // AUTO FIX UNDEFINED DATA
-                fixData(d.c.w);
-                d.h.forEach(h => fixData(h.w));
+                sanitize(d.c.w);
+                d.h.forEach(h => sanitize(h.w));
             }
             st('ok','Online');
-        }catch(e){console.log(e);st('err','Offline');}
-        
+        }catch(e){
+            console.log(e); st('err','Offline');
+            // Try load local if online fail
+            const loc = localStorage.getItem('v21_data');
+            if(loc) d = JSON.parse(loc);
+        }
         document.getElementById('loader').style.display='none';
         renSel(); view();
     }
 
-    function fixData(workers){
-        if(!workers) return;
-        workers.forEach(w => {
-            if(!w.cat || w.cat === 'undefined') w.cat = 'Tukang'; // Default to Tukang if undefined
-            if(!w.att) w.att = Array(7).fill({val:0,ot:0});
+    function sanitize(wks){
+        if(!Array.isArray(wks)) return;
+        wks.forEach(w => {
+            if(!w.cat || w.cat=='undefined') w.cat='Tukang';
+            if(!w.att) w.att=Array(7).fill({val:0,ot:0});
         });
+    }
+
+    function hardReset(){
+        if(confirm("Yakin hapus semua data error dan ambil ulang dari cloud?")){
+            localStorage.removeItem('v21_data');
+            location.reload();
+        }
     }
 
     function st(s,t){
@@ -210,17 +210,18 @@
     }
 
     function sync(){
-        st('busy','Menyimpan...');
+        st('busy','Sync...');
         if(tmr) clearTimeout(tmr);
         tmr = setTimeout(async ()=>{
+            localStorage.setItem('v21_data', JSON.stringify(d)); // Save Local
             try{
                 await fetch(API,{method:'POST',mode:'no-cors',body:JSON.stringify({current:d.c,history:d.h,meta:d.m})});
-                st('ok','Tersimpan');
-            }catch(e){st('err','Gagal Sync');}
+                st('ok','Saved');
+            }catch(e){st('err','Fail');}
         },2000);
     }
 
-    // --- DATA ---
+    // --- CORE ---
     function cur(){ const s=document.getElementById('sel').value; return s==='c'?d.c:d.h[s]; }
     
     function view(){
@@ -251,12 +252,9 @@
         const wks=cur().w||[];
         let tg=0, tp=0, tl=0;
 
-        if(wks.length===0) l.innerHTML='<div style="text-align:center;padding:30px;color:#999">Data Kosong</div>';
+        if(wks.length===0) l.innerHTML='<div style="text-align:center;padding:30px;color:#999">Data Kosong. Klik +</div>';
 
         wks.forEach((w,i)=>{
-            // Fix display if undefined
-            const catDisplay = (w.cat && w.cat !== 'undefined') ? w.cat : 'Tukang'; 
-            
             if(!w.att) w.att=Array(7).fill({val:0,ot:0});
             let hk=0, hf=0, ot=0, bar='', cells='';
             
@@ -278,7 +276,7 @@
             l.innerHTML+=`
             <details class="c">
                 <summary class="h">
-                    <div><h3 style="margin:0">${w.name}</h3><span class="role">${catDisplay}</span></div>
+                    <div><h3 style="margin:0">${w.name}</h3><span class="role">${w.cat}</span></div>
                     <div style="font-weight:700;color:var(--a)">Rp ${f(tt)}</div>
                 </summary>
                 <div class="c-body">
@@ -287,13 +285,13 @@
                         <span>Hadir: <b>${hk}</b> | ½: <b>${hf}</b></span><span>Lembur: <b>${ot}h</b></span>
                     </div>
                     <div class="btns">
-                        <button class="btn b-w" onclick="edt(${i})">📝 Edit</button>
-                        <button class="btn b-r" onclick="del(${i})">🗑 Hapus</button>
+                        <button class="btn bw" onclick="edt(${i})">📝 Edit</button>
+                        <button class="btn br" onclick="del(${i})">🗑 Hapus</button>
                     </div>
                 </div>
             </details>`;
 
-            pb.innerHTML+=`<tr><td class="tc">${i+1}</td><td>${w.name}</td><td>${catDisplay}</td><td class="tr">${f(w.rate)}</td><td class="tr">${f(w.otRate)}</td>${cells}<td class="tc">${hk}</td><td class="tc">${hf}</td><td class="tc">${ot}</td><td class="tr">${f(gp)}</td><td class="tr">${f(go)}</td><td class="tr" style="font-weight:bold">${f(tt)}</td></tr>`;
+            pb.innerHTML+=`<tr><td class="tc">${i+1}</td><td>${w.name}</td><td>${w.cat}</td><td class="tr">${f(w.rate)}</td><td class="tr">${f(w.otRate)}</td>${cells}<td class="tc">${hk}</td><td class="tc">${hf}</td><td class="tc">${ot}</td><td class="tr">${f(gp)}</td><td class="tr">${f(go)}</td><td class="tr" style="font-weight:bold">${f(tt)}</td></tr>`;
         });
 
         document.getElementById('dT').innerText="Rp "+f(tg);
@@ -311,12 +309,11 @@
     
     function add(e){
         e.preventDefault();
-        // Pastikan Value diambil dengan benar
-        const catVal = document.getElementById('cA').value;
+        const cat = document.getElementById('cA').value;
         const w={
             id:Date.now(), 
             name:document.getElementById('nA').value, 
-            cat: catVal ? catVal : 'Tukang', // Default fallback
+            cat: cat, 
             rate:Number(document.getElementById('rA').value), 
             otRate:Number(document.getElementById('oA').value), 
             att:Array(7).fill({val:0,ot:0})
@@ -339,19 +336,16 @@
                     <label class="rd"><input type="radio" name="d${x}" value="0.5" ${a.val==0.5?'checked':''}><span></span>½</label>
                     <label class="rd"><input type="radio" name="d${x}" value="0" ${a.val==0?'checked':''}><span></span>Abs</label>
                 </div>
-                <input type="number" id="o${x}" value="${a.ot}" class="iot">
+                <input type="number" id="o${x}" value="${a.ot}" class="iot" placeholder="Jam">
             </div>`;
         });
         document.getElementById('mE').className='mod on';
     }
 
-    // BULK FIX
     function bulk(v){
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
-            for(let r of rs) {
-                if(parseFloat(r.value) === v) r.checked=true;
-            }
+            for(let r of rs) if(parseFloat(r.value)===v) r.checked=true;
         }
     }
     function bulkOt(){
@@ -364,19 +358,19 @@
         const w=cur().w[idx];
         for(let i=0;i<7;i++){
             const rs=document.getElementsByName('d'+i);
-            let v=0; 
-            for(let r of rs) if(r.checked) v=parseFloat(r.value);
+            let v=0; for(let r of rs) if(r.checked) v=parseFloat(r.value);
             w.att[i]={val:v, ot:Number(document.getElementById('o'+i).value)};
         }
         save(); cl('mE');
     }
 
     function arch(){
-        if(!d.c.start || !d.c.end) return alert('Isi Tanggal dulu');
-        if(confirm('Arsipkan?')){
-            d.h.unshift(JSON.parse(JSON.stringify(d.c)));
-            d.c.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
-            d.c.start=''; d.c.end='';
+        const c = d.c;
+        if(!c.start || !c.end) return alert('Isi Tanggal dulu');
+        if(confirm('Arsipkan Minggu Ini?')){
+            d.h.unshift(JSON.parse(JSON.stringify(c)));
+            c.w.forEach(w=>w.att=Array(7).fill({val:0,ot:0}));
+            c.start=''; c.end='';
             renSel(); view(); sync();
         }
     }
@@ -393,7 +387,7 @@
                 l.push(d.h[i].end); v.push(t);
             }
             if(ch1)ch1.destroy();
-            ch1=new Chart(document.getElementById('cT'),{type:'line',data:{labels:l,datasets:[{label:'Total',data:v,borderColor:'#3b82f6',fill:true,backgroundColor:'#eff6ff'}]}});
+            ch1=new Chart(document.getElementById('cT'),{type:'line',data:{labels:l,datasets:[{label:'Total',data:v,borderColor:'#3b82f6',fill:true}]}});
         },100);
     }
     function rAll(){
